@@ -34,6 +34,24 @@ func TestFormatTerraformVarsAsArgs(t *testing.T) {
 	}
 }
 
+func TestFormatTerraformBackendConfigAsArgs(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		vars     map[string]interface{}
+		expected []string
+	}{
+		{map[string]interface{}{"foo": KeyOnly}, []string{"-backend-config=foo"}},
+		{map[string]interface{}{"bar": "baz"}, []string{"-backend-config=bar=baz"}},
+	}
+
+	for _, testCase := range testCases {
+		checkResultWithRetry(t, 100, testCase.expected, fmt.Sprintf("FormatTerraformBackendConfigAsArgs(%v)", testCase.vars), func() interface{} {
+			return FormatTerraformBackendConfigAsArgs(testCase.vars)
+		})
+	}
+}
+
 func TestPrimitiveToHclString(t *testing.T) {
 	t.Parallel()
 
