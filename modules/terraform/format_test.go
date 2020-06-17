@@ -43,6 +43,7 @@ func TestFormatTerraformBackendConfigAsArgs(t *testing.T) {
 	}{
 		{map[string]interface{}{"foo": KeyOnly}, []string{"-backend-config=foo"}},
 		{map[string]interface{}{"bar": "baz"}, []string{"-backend-config=bar=baz"}},
+		{map[string]interface{}{"foo": "bar", "baz": "bop"}, []string{"-backend-config=foo=bar", "-backend-config=baz=bop"}},
 	}
 
 	for _, testCase := range testCases {
