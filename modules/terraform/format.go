@@ -90,7 +90,15 @@ func formatTerraformArgs(vars map[string]interface{}, prefix string, useSpaceAsS
 
 	for key, value := range vars {
 		hclString := toHclString(value, false)
-		argValue := fmt.Sprintf("%s=%s", key, hclString)
+		// we use a custom signal value to indicate if a value is meant to be a top-level assignment
+		// e.g. -backend-config=config/backend.config
+		// we cannot use 'nil' because 'null' is a valid input
+		var argValue string
+		if value == KeyOnly {
+			argValue = key
+		} else {
+			argValue = fmt.Sprintf("%s=%s", key, hclString)
+		}
 		if useSpaceAsSeparator {
 			args = append(args, prefix, argValue)
 		} else {
