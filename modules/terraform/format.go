@@ -90,8 +90,8 @@ func formatTerraformArgs(vars map[string]interface{}, prefix string, useSpaceAsS
 
 	for key, value := range vars {
 		hclString := toHclString(value, false)
-		// we use a custom signal value to indicate if a value is meant to be a top-level assignment
-		// e.g. -backend-config=config/backend.config
+		// we use a custom signal value to indicate if we want to set solely the key and no value
+		// e.g. -backend-config=PATH vs -backend-config=key=value
 		// we cannot use 'nil' because 'null' is a valid input
 		var argValue string
 		if value == KeyOnly {
