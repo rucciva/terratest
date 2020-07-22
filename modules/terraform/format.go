@@ -25,7 +25,8 @@ var TerraformCommandsWithLockSupport = []string{
 type SignalValue int
 
 const (
-	// KeyOnly tells the formatter to omit the value and handle the option as a top-level assignment
+	// KeyOnly tells the formatter to omit the value and handle the option as a top-level assignment.
+	// For example: you can set terraform.Options.BackendConfig["key"] to KeyOnly to receive -backend-config=key
 	KeyOnly SignalValue = iota
 )
 

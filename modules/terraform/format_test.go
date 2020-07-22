@@ -28,9 +28,10 @@ func TestFormatTerraformVarsAsArgs(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		checkResultWithRetry(t, 100, testCase.expected, fmt.Sprintf("FormatTerraformVarsAsArgs(%v)", testCase.vars), func() interface{} {
-			return FormatTerraformVarsAsArgs(testCase.vars)
-		})
+		result := FormatTerraformVarsAsArgs(testCase.vars)
+		if !assert.ObjectsAreEqual(testCase.expected, result) {
+			t.Errorf("FormatTerraformVarsAsArgs(%v) != %v got %v", testCase.vars, testCase.expected, result)
+		}
 	}
 }
 
@@ -47,9 +48,10 @@ func TestFormatTerraformBackendConfigAsArgs(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		checkResultWithRetry(t, 100, testCase.expected, fmt.Sprintf("FormatTerraformBackendConfigAsArgs(%v)", testCase.vars), func() interface{} {
-			return FormatTerraformBackendConfigAsArgs(testCase.vars)
-		})
+		result := FormatTerraformBackendConfigAsArgs(testCase.vars)
+		if !assert.ObjectsAreEqual(testCase.expected, result) {
+			t.Errorf("FormatTerraformBackendConfigAsArgs(%v) != %v got %v", testCase.vars, testCase.expected, result)
+		}
 	}
 }
 
