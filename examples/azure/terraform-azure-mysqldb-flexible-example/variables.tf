@@ -82,7 +82,7 @@ variable "mysql_version" {
 
   validation {
     condition     = var.mysql_version == "5.7" || var.mysql_version == "8.0.21"
-    error_message = "MySQL version for Flexbile Server instance should be 5.7 or 8.0.21"
+    error_message = "MySQL version for Flexbile Server instance should be 5.7 or 8.0.21."
   }
 }
 
