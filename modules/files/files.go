@@ -10,6 +10,16 @@ import (
 	"github.com/mattn/go-zglob"
 )
 
+func DefaultPathFilter(path string) bool {
+	if PathIsTerraformVersionFile(path) || PathIsTerraformLockFile(path) {
+		return true
+	}
+	if PathContainsHiddenFileOrFolder(path) || PathContainsTerraformStateOrVars(path) {
+		return false
+	}
+	return true
+}
+
 // FileExists returns true if the given file exists.
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
@@ -60,17 +70,7 @@ func CopyTerraformFolderToDestWithFilter(folderPath string, destRootFolder strin
 // files, and terraform.tfvars files are not copied to this temp folder, as you typically don't want them interfering with your tests.
 // This method is useful when running through a build tool so the files are copied to a destination that is cleaned on each run of the pipeline.
 func CopyTerraformFolderToDest(folderPath string, destRootFolder string, tempFolderPrefix string) (string, error) {
-	filter := func(path string) bool {
-		if PathIsTerraformVersionFile(path) || PathIsTerraformLockFile(path) {
-			return true
-		}
-		if PathContainsHiddenFileOrFolder(path) || PathContainsTerraformStateOrVars(path) {
-			return false
-		}
-		return true
-	}
-
-	return CopyTerraformFolderToDestWithFilter(folderPath, destRootFolder, tempFolderPrefix, filter)
+	return CopyTerraformFolderToDestWithFilter(folderPath, destRootFolder, tempFolderPrefix, DefaultPathFilter)
 }
 
 // CopyTerraformFolderToTempWithFilter calls CopyTerraformFolderToDestWithFilter, passing os.TempDir() as the root destination folder.
