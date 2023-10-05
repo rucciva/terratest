@@ -38,6 +38,15 @@ func IsExistingDir(path string) bool {
 	return err == nil && fileInfo.IsDir()
 }
 
+func CopyTerraformFolderToDestWithFilter(folderPath string, destRootFolder string, tempFolderPrefix string, fileFilter func(string) bool) (string, error) {
+	destFolder, err := CopyFolderToDest(folderPath, destRootFolder, tempFolderPrefix, fileFilter)
+	if err != nil {
+		return "", err
+	}
+
+	return destFolder, nil
+}
+
 // CopyTerraformFolderToDest creates a copy of the given folder and all its contents in a specified folder with a unique name and the given prefix.
 // This is useful when running multiple tests in parallel against the same set of Terraform files to ensure the
 // tests don't overwrite each other's .terraform working directory and terraform.tfstate files. This method returns
@@ -56,12 +65,11 @@ func CopyTerraformFolderToDest(folderPath string, destRootFolder string, tempFol
 		return true
 	}
 
-	destFolder, err := CopyFolderToDest(folderPath, destRootFolder, tempFolderPrefix, filter)
-	if err != nil {
-		return "", err
-	}
+	return CopyTerraformFolderToDestWithFilter(folderPath, destRootFolder, tempFolderPrefix, filter)
+}
 
-	return destFolder, nil
+func CopyTerraformFolderToTempWithFilter(folderPath string, tempFolderPrefix string, fileFilter func(string) bool) (string, error) {
+	return CopyTerraformFolderToDestWithFilter(folderPath, os.TempDir(), tempFolderPrefix, fileFilter)
 }
 
 // CopyTerraformFolderToTemp calls CopyTerraformFolderToDest, passing os.TempDir() as the root destination folder.
