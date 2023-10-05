@@ -38,8 +38,13 @@ func IsExistingDir(path string) bool {
 	return err == nil && fileInfo.IsDir()
 }
 
-func CopyTerraformFolderToDestWithFilter(folderPath string, destRootFolder string, tempFolderPrefix string, fileFilter func(string) bool) (string, error) {
-	destFolder, err := CopyFolderToDest(folderPath, destRootFolder, tempFolderPrefix, fileFilter)
+// CopyTerraformFolderToDestWithFilter creates a copy of the given folder and all its contents in a specified folder with a unique name and the given prefix.
+// This is useful when running multiple tests in parallel against the same set of Terraform files to ensure the
+// tests don't overwrite each other's .terraform working directory and terraform.tfstate files. This method returns
+// the path to the dest folder with the copied contents. You can configure which files you want to copy by passing in a filter function.
+// This method is useful when running through a build tool so the files are copied to a destination that is cleaned on each run of the pipeline.
+func CopyTerraformFolderToDestWithFilter(folderPath string, destRootFolder string, tempFolderPrefix string, filter func(string) bool) (string, error) {
+	destFolder, err := CopyFolderToDest(folderPath, destRootFolder, tempFolderPrefix, filter)
 	if err != nil {
 		return "", err
 	}
@@ -68,8 +73,9 @@ func CopyTerraformFolderToDest(folderPath string, destRootFolder string, tempFol
 	return CopyTerraformFolderToDestWithFilter(folderPath, destRootFolder, tempFolderPrefix, filter)
 }
 
-func CopyTerraformFolderToTempWithFilter(folderPath string, tempFolderPrefix string, fileFilter func(string) bool) (string, error) {
-	return CopyTerraformFolderToDestWithFilter(folderPath, os.TempDir(), tempFolderPrefix, fileFilter)
+// CopyTerraformFolderToTempWithFilter calls CopyTerraformFolderToDestWithFilter, passing os.TempDir() as the root destination folder.
+func CopyTerraformFolderToTempWithFilter(folderPath string, tempFolderPrefix string, filter func(string) bool) (string, error) {
+	return CopyTerraformFolderToDestWithFilter(folderPath, os.TempDir(), tempFolderPrefix, filter)
 }
 
 // CopyTerraformFolderToTemp calls CopyTerraformFolderToDest, passing os.TempDir() as the root destination folder.
