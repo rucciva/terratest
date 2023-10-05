@@ -10,6 +10,7 @@ import (
 	"github.com/mattn/go-zglob"
 )
 
+// DefaultPathFilter is the default filter used by CopyTerraformFolderToDest to determine which files to copy.
 func DefaultPathFilter(path string) bool {
 	if PathIsTerraformVersionFile(path) || PathIsTerraformLockFile(path) {
 		return true
