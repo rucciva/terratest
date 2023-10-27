@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-11-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/datafactory/mgmt/2018-06-01/datafactory"
 	kvmng "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
+	"github.com/Azure/azure-SDK-for-go/services/machinelearningservices/mgmt/2019-05-01/machinelearningservices"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-09-01/network"
 	sqlmi "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-06-01/subscriptions"
@@ -917,6 +918,35 @@ func CreateDataFactoriesClientE(subscriptionID string) (*datafactory.FactoriesCl
 	dataFactoryClient.Authorizer = *authorizer
 
 	return &dataFactoryClient, nil
+}
+
+// CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
+func CreateMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearning.WorkspacesClient, error) {
+	// Validate Azure subscription ID
+	subscriptionID, err := getTargetAzureSubscription(subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Lookup environment URI
+	baseURI, err := getBaseURI()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a machinelearning client
+	mlWorkspaceClient := machinelearning.NewWorkspacesClientWithBaseURI(baseURI, subscriptionID)
+
+	// Create an authorizer
+	authorizer, err := NewAuthorizer()
+	if err != nil {
+		return nil, err
+	}
+
+	// Attach authorizer to the client
+	mlWorkspaceClient.Authorizer = *authorizer
+
+	return &mlWorkspaceClient, nil
 }
 
 // GetKeyVaultURISuffixE returns the proper KeyVault URI suffix for the configured Azure environment.
