@@ -3,36 +3,56 @@ package azure
 import (
 	"context"
 
-	"github.com/Azure/azure-SDK-for-go/services/machinelearningservices/mgmt/2019-05-01/machinelearningservices"
+	machinelearning "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/machinelearning/armmachinelearning/v3"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/stretchr/testify/require"
 )
 
+// ResourceGroupExists indicates whether a resource group exists within a subscription; otherwise false
+// This function would fail the test if there is an error.
+func MachinelearningWorkspaceExists(t testing.TestingT, resourceGroupName string, workspaceName string, subscriptionID string) bool {
+	result, err := MachinelearningWorkspaceExistsE(t, resourceGroupName, workspaceName, subscriptionID)
+	require.NoError(t, err)
+	return result
+}
+
+// ResourceGroupExistsE indicates whether a resource group exists within a subscription
+func MachinelearningWorkspaceExistsE(t testing.TestingT, resourceGroupName, workspaceName, subscriptionID string) (bool, error) {
+	workspace, err := GetMachinelearningWorkspaceE(t, resourceGroupName, workspaceName, subscriptionID)
+	if err != nil {
+		if ResourceNotFoundErrorExists(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return (workspaceName == *workspace.Name), nil
+
+}
+
 // GetMachinelearningWorkspace is a helper function that gets the machinelearning workspace.
 // This function would fail the test if there is an error.
-func GetMachinelearningWorkspace(t testing.TestingT, resGroupName string, workspaceName string, subscriptionID string) machinelearning.Workspace {
-	wo, err := GetMachinelearningWorkspaceE(t, subscriptionID, resGroupName, serverName, dbName)
+func GetMachinelearningWorkspace(t testing.TestingT, resGroupName string, workspaceName string, subscriptionID string) *machinelearning.Workspace {
+	workspace, err := GetMachinelearningWorkspaceE(t, resGroupName, workspaceName, subscriptionID)
 	require.NoError(t, err)
 
-	return database
+	return workspace
 }
 
 // GetMachinelearningWorkspaceE is a helper function that gets the machinelearning workspace.
-func GetMachinelearningWorkspaceE(t testing.TestingT, subscriptionID string, resGroupName string, workspaceName string) (*machinelearning.Workspace, error) {
+func GetMachinelearningWorkspaceE(t testing.TestingT, resGroupName string, workspaceName string, subscriptionID string) (*machinelearning.Workspace, error) {
 	// Create a ml workspace client
-	mlWorkspaceClient, err := GetMachinelearningWorkspaceClientE(subscriptionID)
+	workspaceClient, err := GetMachinelearningWorkspaceClientE(subscriptionID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the corresponding workspace client
-	mlWorkspace, err := mlWorkspaceClient.Get(context.Background(), resGroupName, workspaceName)
+	workspace, err := workspaceClient.Get(context.Background(), resGroupName, workspaceName, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	//Return workspace
-	return &mlWorkspace, nil
+	return &workspace.Workspace, nil
 }
 
 // GetMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
@@ -42,13 +62,6 @@ func GetMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearning
 	if err != nil {
 		return nil, err
 	}
-
-	// Create an authorizer
-	authorizer, err := NewAuthorizer()
-	if err != nil {
-		return nil, err
-	}
-	client.Authorizer = *authorizer
 
 	return client, nil
 }

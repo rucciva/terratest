@@ -20,13 +20,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/sql/mgmt/sql"
 	"github.com/Azure/azure-sdk-for-go/profiles/preview/cosmos-db/mgmt/documentdb"
 	"github.com/Azure/azure-sdk-for-go/profiles/preview/preview/monitor/mgmt/insights"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	machinelearning "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/machinelearning/armmachinelearning/v3"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/containerinstance/mgmt/2018-10-01/containerinstance"
 	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-11-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/datafactory/mgmt/2018-06-01/datafactory"
 	kvmng "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
-	"github.com/Azure/azure-SDK-for-go/services/machinelearningservices/mgmt/2019-05-01/machinelearningservices"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-09-01/network"
 	sqlmi "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-06-01/subscriptions"
@@ -928,25 +929,18 @@ func CreateMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearn
 		return nil, err
 	}
 
-	// Lookup environment URI
-	baseURI, err := getBaseURI()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a machinelearning client
-	mlWorkspaceClient := machinelearning.NewWorkspacesClientWithBaseURI(baseURI, subscriptionID)
-
-	// Create an authorizer
-	authorizer, err := NewAuthorizer()
+	mlWorkspaceClient, err := machinelearning.NewWorkspacesClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Attach authorizer to the client
-	mlWorkspaceClient.Authorizer = *authorizer
-
-	return &mlWorkspaceClient, nil
+	return mlWorkspaceClient, nil
 }
 
 // GetKeyVaultURISuffixE returns the proper KeyVault URI suffix for the configured Azure environment.
