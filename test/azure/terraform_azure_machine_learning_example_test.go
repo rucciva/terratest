@@ -1,6 +1,7 @@
 package test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/azure"
@@ -12,9 +13,9 @@ import (
 func TestTerraformAzureResourceGroupExample(t *testing.T) {
 	t.Parallel()
 
-	// // subscriptionID is overridden by the environment variable "ARM_SUBSCRIPTION_ID"
+	// subscriptionID is overridden by the environment variable "ARM_SUBSCRIPTION_ID"
 	subscriptionID := ""
-	uniquePostfix := random.UniqueId()
+	uniquePostfix := strings.ToLower(random.UniqueId())
 
 	// website::tag::1:: Configure Terraform setting up a path to Terraform code.
 	terraformOptions := &terraform.Options{
@@ -39,6 +40,4 @@ func TestTerraformAzureResourceGroupExample(t *testing.T) {
 	exists := azure.MachinelearningWorkspaceExists(t, resourceGroupName, workspaceName, subscriptionID)
 	assert.True(t, exists, "Resource group does not exist")
 
-	// workspace := azure.GetMachinelearningWorkspace(t, "rg-scenera-002sandbox", "mlw-scenera-002sandbox", subscriptionID)
-	// assert.Equal(t, *workspace.Location, "eastus")
 }

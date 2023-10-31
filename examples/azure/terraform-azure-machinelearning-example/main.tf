@@ -49,7 +49,7 @@ resource "azurerm_key_vault" "ml_keyvault" {
 }
 
 resource "azurerm_storage_account" "ml_storageaccount" {
-  name                     = "samlworkspace${var.postfix}"
+  name                     = "samlwkspce${var.postfix}"
   location                 = azurerm_resource_group.ml_rg.location
   resource_group_name      = azurerm_resource_group.ml_rg.name
   account_tier             = "Standard"
