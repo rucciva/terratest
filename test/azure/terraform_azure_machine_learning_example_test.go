@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTerraformAzureResourceGroupExample(t *testing.T) {
+func TestTerraformAzureMachineLearningWorkspaceExample(t *testing.T) {
 	t.Parallel()
 
 	// subscriptionID is overridden by the environment variable "ARM_SUBSCRIPTION_ID"
@@ -39,5 +39,12 @@ func TestTerraformAzureResourceGroupExample(t *testing.T) {
 	//website::tag::4:: Verify the resource group exists
 	exists := azure.MachinelearningWorkspaceExists(t, resourceGroupName, workspaceName, subscriptionID)
 	assert.True(t, exists, "Resource group does not exist")
-
 }
+
+// func TestTerraformAzureMachineLearningComputeExample(t *testing.T) {
+// 	t.Parallel()
+
+// 	// subscriptionID is overridden by the environment variable "ARM_SUBSCRIPTION_ID"
+// 	subscriptionID := ""
+
+// }

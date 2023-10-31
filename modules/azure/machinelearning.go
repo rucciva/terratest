@@ -65,3 +65,31 @@ func GetMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearning
 
 	return client, nil
 }
+
+// GetMachinelearningComputeE is a helper function that gets the machinelearning workspace compute.
+func GetMachinelearningComputeE(t testing.TestingT, resGroupName string, workspaceName string, computeName string, subscriptionID string) (*machinelearning.ComputeResource, error) {
+	// Create a ml workspace client
+	computeClient, err := GetMachinelearningComputeClientE(subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the corresponding workspace client
+	compute, err := computeClient.Get(context.Background(), resGroupName, workspaceName, computeName, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &compute.ComputeResource, nil
+}
+
+// GetMachinelearningComputeClientE is a helper function that will setup a machine learning compute client.
+func GetMachinelearningComputeClientE(subscriptionID string) (*machinelearning.ComputeClient, error) {
+	// Create a new Subnet client from client factory
+	client, err := CreateMachinelearningComputeClientE(subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}

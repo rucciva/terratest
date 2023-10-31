@@ -20,6 +20,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/sql/mgmt/sql"
 	"github.com/Azure/azure-sdk-for-go/profiles/preview/cosmos-db/mgmt/documentdb"
 	"github.com/Azure/azure-sdk-for-go/profiles/preview/preview/monitor/mgmt/insights"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	machinelearning "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/machinelearning/armmachinelearning/v3"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
@@ -923,6 +924,17 @@ func CreateDataFactoriesClientE(subscriptionID string) (*datafactory.FactoriesCl
 
 // CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
 func CreateMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearning.WorkspacesClient, error) {
+	// Create a machinelearning client
+	workspaceClient, err := CreateMachinelearningWorkspaceClientWithClientOptionsE(subscriptionID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return workspaceClient, nil
+}
+
+// CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
+func CreateMachinelearningWorkspaceClientWithClientOptionsE(subscriptionID string, clientOptions *policy.ClientOptions) (*machinelearning.WorkspacesClient, error) {
 	// Validate Azure subscription ID
 	subscriptionID, err := getTargetAzureSubscription(subscriptionID)
 	if err != nil {
@@ -935,12 +947,34 @@ func CreateMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearn
 	}
 
 	// Create a machinelearning client
-	mlWorkspaceClient, err := machinelearning.NewWorkspacesClient(subscriptionID, cred, nil)
+	mlWorkspaceClient, err := machinelearning.NewWorkspacesClient(subscriptionID, cred, clientOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	return mlWorkspaceClient, nil
+}
+
+// CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
+func CreateMachinelearningComputeClientE(subscriptionID string) (*machinelearning.ComputeClient, error) {
+	// Validate Azure subscription ID
+	subscriptionID, err := getTargetAzureSubscription(subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a machinelearning client
+	mlComputeeClient, err := machinelearning.NewComputeClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return mlComputeeClient, nil
 }
 
 // GetKeyVaultURISuffixE returns the proper KeyVault URI suffix for the configured Azure environment.

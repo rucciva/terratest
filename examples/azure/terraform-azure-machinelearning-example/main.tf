@@ -68,3 +68,16 @@ resource "azurerm_machine_learning_workspace" "ml_workspace" {
     type = "SystemAssigned"
   }
 }
+
+resource "azurerm_machine_learning_compute_cluster" "ml_compute_cluster" {
+  name                          = "mlcomputecluster-${var.postfix}"
+  location                      = azurerm_resource_group.ml_rg.location
+  vm_priority                   = "LowPriority"
+  vm_size                       = "STANDARD_NC4AS_T4_V3"
+  machine_learning_workspace_id = azurerm_machine_learning_workspace.ml_workspace.id
+  scale_settings {
+    min_node_count                       = 0
+    max_node_count                       = 4
+    scale_down_nodes_after_idle_duration = "PT2M" 
+  }
+}
