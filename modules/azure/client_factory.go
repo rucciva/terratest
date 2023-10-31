@@ -923,18 +923,7 @@ func CreateDataFactoriesClientE(subscriptionID string) (*datafactory.FactoriesCl
 }
 
 // CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
-func CreateMachinelearningWorkspaceClientE(subscriptionID string) (*machinelearning.WorkspacesClient, error) {
-	// Create a machinelearning client
-	workspaceClient, err := CreateMachinelearningWorkspaceClientWithClientOptionsE(subscriptionID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return workspaceClient, nil
-}
-
-// CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
-func CreateMachinelearningWorkspaceClientWithClientOptionsE(subscriptionID string, clientOptions *policy.ClientOptions) (*machinelearning.WorkspacesClient, error) {
+func CreateMachinelearningWorkspaceClientE(subscriptionID string, clientOptions *policy.ClientOptions) (*machinelearning.WorkspacesClient, error) {
 	// Validate Azure subscription ID
 	subscriptionID, err := getTargetAzureSubscription(subscriptionID)
 	if err != nil {
@@ -955,7 +944,7 @@ func CreateMachinelearningWorkspaceClientWithClientOptionsE(subscriptionID strin
 	return mlWorkspaceClient, nil
 }
 
-// CreateMachinelearningWorkspaceClientE is a helper function that will setup a machine learning workspace client.
+// CreateMachinelearningComputeClientE is a helper function that will setup a machine learning compute client.
 func CreateMachinelearningComputeClientE(subscriptionID string) (*machinelearning.ComputeClient, error) {
 	// Validate Azure subscription ID
 	subscriptionID, err := getTargetAzureSubscription(subscriptionID)

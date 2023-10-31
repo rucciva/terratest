@@ -7,7 +7,7 @@ output "workspace_name" {
 }
 
 output "compute_name" {
-  value = azurerm_machine_learning_workspace.ml_compute_cluster.name
+  value = azurerm_machine_learning_compute_cluster.ml_compute_cluster.name
 }
 
 

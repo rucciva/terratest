@@ -1,11 +1,11 @@
-# Terraform Azure Monitor Example
+# Terraform Machine Learning Example
 
 This folder contains a simple Terraform module that deploys resources in [Azure](https://azure.microsoft.com/) to demonstrate
-how you can use Terratest to write automated tests for your Azure Terraform code. This module deploys an Azure Storage Account and Azure Azure Key Vault with an Azure Monitor Diagnostic Setting.
+how you can use Terratest to write automated tests for your Azure Terraform code. This module deploys an Azure Machine Learning Workspace and Azure Machine Learning Compute Cluster.
 
-- A [Diagnostic Setting](https://docs.microsoft.com/azure/azure-monitor/platform/diagnostic-settings-template)
+- [Azure Machine Learning](https://learn.microsoft.com/en-us/azure/machine-learning/?view=azureml-api-2e)
 
-Check out [test/azure/terraform_azure_monitor_example_test.go](/test/azure/terraform_azure_monitor_example_test.go) to see how you can write
+Check out [test/azure/terraform_azure_machine_learning_example_test.go](/test/azure/terraform_azure_machine_learning_example_test.go) to see how you can write
 automated tests for this module.
 
 Note that the resources deployed in this module don't actually do anything; it just runs the resources for
@@ -35,6 +35,6 @@ it should be free, but you are completely responsible for all Azure charges.
 1. [Review environment variables](#review-environment-variables).
 1. Install [Golang](https://golang.org/) and make sure this code is checked out into your `GOPATH`.
 1. `cd test`
-1. Make sure [the azure-sdk-for-go versions match](#check-go-dependencies) in [/go.mod](/go.mod) and in [test/azure/terraform_azure_monitor_example_test.go](/test/azure/terraform_azure_monitor_example_test.go).
-1. `go build test/azure/terraform_azure_monitor_example_test.go`
-1. `go test -v -run TestTerraformAzureMonitorExample`
+1. Make sure [the azure-sdk-for-go versions match](#check-go-dependencies) in [/go.mod](/go.mod) and in [test/azure/terraform_azure_machine_learning_example_test.go](/test/azure/terraform_azure_machine_learning_example_test.go).
+1. `go build test/azure/terraform_azure_machine_learning_example_test.go`
+1. `go test -v -run TestTerraformAzureMachineLearningWorkspaceExample`
