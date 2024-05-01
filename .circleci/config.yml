@@ -14,6 +14,7 @@ env: &env
     HELM_VERSION: v3.13.1
     KUBECONFIG: /home/circleci/.kube/config
     BIN_BUILD_PARALLELISM: 3
+    MISE_VERSION: v2024.4.0
     # Mise ASDF defaults to using main.tf to determine the terraform version to use, so we need to
     # override this to use the .terraform-version file instead.
     ASDF_HASHICORP_TERRAFORM_VERSION_FILE: .terraform-version
@@ -47,6 +48,7 @@ install_gruntwork_utils: &install_gruntwork_utils
     gruntwork-install --module-name "kubernetes-circleci-helpers" --repo "https://github.com/gruntwork-io/terraform-aws-ci" --tag "${MODULE_CI_VERSION}"
     gruntwork-install --module-name "gcp-helpers" --repo "https://github.com/gruntwork-io/terraform-google-ci" --tag "${MODULE_GCP_CI_VERSION}"
     configure-environment-for-gruntwork-module \
+      --mise-version ${MISE_VERSION} \
       --terraform-version ${TERRAFORM_VERSION} \
       --terragrunt-version ${TERRAGRUNT_VERSION} \
       --packer-version ${PACKER_VERSION} \
