@@ -1,7 +1,7 @@
 env: &env
   environment:
     GRUNTWORK_INSTALLER_VERSION: v0.0.36
-    MODULE_CI_VERSION: v0.55.1
+    MODULE_CI_VERSION: v0.56.0
     MODULE_GCP_CI_VERSION: v0.1.1
     TERRAFORM_VERSION: 1.5.7
     PACKER_VERSION: 1.7.4
@@ -14,6 +14,9 @@ env: &env
     HELM_VERSION: v3.13.1
     KUBECONFIG: /home/circleci/.kube/config
     BIN_BUILD_PARALLELISM: 3
+    # Mise ASDF defaults to using main.tf to determine the terraform version to use, so we need to
+    # override this to use the .terraform-version file instead.
+    ASDF_HASHICORP_TERRAFORM_VERSION_FILE: .terraform-version
 
 defaults: &defaults
   machine:
