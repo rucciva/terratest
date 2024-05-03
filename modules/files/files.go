@@ -42,7 +42,7 @@ func IsExistingDir(path string) bool {
 // This is useful when running multiple tests in parallel against the same set of Terraform files to ensure the
 // tests don't overwrite each other's .terraform working directory and terraform.tfstate files. This method returns
 // the path to the dest folder with the copied contents. Hidden files and folders (with the exception of the `.terraform-version` files used
-// by the [mise] tool](https://github.com/jdx/mise) and `.terraform.lock.hcl` used by Terraform to lock providers versions), Terraform state
+// by the [mise tool](https://github.com/jdx/mise) and `.terraform.lock.hcl` used by Terraform to lock providers versions), Terraform state
 // files, and terraform.tfvars files are not copied to this temp folder, as you typically don't want them interfering with your tests.
 // This method is useful when running through a build tool so the files are copied to a destination that is cleaned on each run of the pipeline.
 func CopyTerraformFolderToDest(folderPath string, destRootFolder string, tempFolderPrefix string) (string, error) {
