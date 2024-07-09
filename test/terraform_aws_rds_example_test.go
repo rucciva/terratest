@@ -24,8 +24,12 @@ func TestTerraformAwsRdsExample(t *testing.T) {
 	password := "password"
 	// Pick a random AWS region to test in. This helps ensure your code works in all regions.
 	awsRegion := aws.GetRandomStableRegion(t, nil, nil)
+	engineVersion := aws.GetValidEngineVersion(t, awsRegion, "mysql", "5.7")
+	instanceType := aws.GetRecommendedRdsInstanceType(t, awsRegion, "mysql", engineVersion, []string{"db.t2.micro", "db.t3.micro", "db.t3.small"})
 
-	terraformOptions := &terraform.Options{
+	// Construct the terraform options with default retryable errors to handle the most common retryable errors in
+	// terraform testing.
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		// The path to where our Terraform code is located
 		TerraformDir: "../examples/terraform-aws-rds-example",
 
@@ -36,20 +40,17 @@ func TestTerraformAwsRdsExample(t *testing.T) {
 			"engine_name":          "mysql",
 			"major_engine_version": "5.7",
 			"family":               "mysql5.7",
+			"instance_class":       instanceType,
 			"username":             username,
 			"password":             password,
 			"allocated_storage":    5,
 			"license_model":        "general-public-license",
-			"engine_version":       "5.7.21",
+			"engine_version":       engineVersion,
 			"port":                 expectedPort,
 			"database_name":        expectedDatabaseName,
+			"region":               awsRegion,
 		},
-
-		// Environment variables to set when running Terraform
-		EnvVars: map[string]string{
-			"AWS_DEFAULT_REGION": awsRegion,
-		},
-	}
+	})
 
 	// At the end of the test, run `terraform destroy` to clean up any resources that were created
 	defer terraform.Destroy(t, terraformOptions)

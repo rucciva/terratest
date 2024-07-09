@@ -1,3 +1,10 @@
+terraform {
+  # This module is now only being tested with Terraform 0.13.x. However, to make upgrading easier, we are setting
+  # 0.12.26 as the minimum version, as that version added support for required_providers with source URLs, making it
+  # forwards compatible with 0.13.x code.
+  required_version = ">= 0.12.26"
+}
+
 provider "google" {
   region = "us-east1"
 }
@@ -8,10 +15,10 @@ resource "google_compute_instance" "example" {
   machine_type = "f1-micro"
   zone         = "us-east1-b"
 
-  # website::tag::2:: Run Ubuntu 18.04 on the instace
+  # website::tag::2:: Run Ubuntu 22.04 on the instance
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+      image = "ubuntu-os-cloud/ubuntu-2204-lts"
     }
   }
 

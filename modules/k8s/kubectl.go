@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"io/ioutil"
 	"net/url"
 	"os"
 
@@ -40,6 +39,7 @@ func RunKubectlAndGetOutputE(t testing.TestingT, options *KubectlOptions, args .
 		Command: "kubectl",
 		Args:    cmdArgs,
 		Env:     options.Env,
+		Logger:  options.Logger,
 	}
 	return shell.RunCommandAndGetOutputE(t, command)
 }
@@ -53,6 +53,17 @@ func KubectlDelete(t testing.TestingT, options *KubectlOptions, configPath strin
 // KubectlDeleteE will take in a file path and delete it from the cluster targeted by KubectlOptions.
 func KubectlDeleteE(t testing.TestingT, options *KubectlOptions, configPath string) error {
 	return RunKubectlE(t, options, "delete", "-f", configPath)
+}
+
+// KubectlDeleteFromKustomize will take in a kustomization directory path and delete it from the cluster targeted by KubectlOptions. If there are any
+// errors, fail the test immediately.
+func KubectlDeleteFromKustomize(t testing.TestingT, options *KubectlOptions, configPath string) {
+	require.NoError(t, KubectlDeleteFromKustomizeE(t, options, configPath))
+}
+
+// KubectlDeleteFromKustomizeE will take in a kustomization directory path and delete it from the cluster targeted by KubectlOptions.
+func KubectlDeleteFromKustomizeE(t testing.TestingT, options *KubectlOptions, configPath string) error {
+	return RunKubectlE(t, options, "delete", "-k", configPath)
 }
 
 // KubectlDeleteFromString will take in a kubernetes resource config as a string and delete it on the cluster specified
@@ -81,6 +92,17 @@ func KubectlApply(t testing.TestingT, options *KubectlOptions, configPath string
 // KubectlApplyE will take in a file path and apply it to the cluster targeted by KubectlOptions.
 func KubectlApplyE(t testing.TestingT, options *KubectlOptions, configPath string) error {
 	return RunKubectlE(t, options, "apply", "-f", configPath)
+}
+
+// KubectlApplyFromKustomize will take in a kustomization directory path and apply it to the cluster targeted by KubectlOptions. If there are any
+// errors, fail the test immediately.
+func KubectlApplyFromKustomize(t testing.TestingT, options *KubectlOptions, configPath string) {
+	require.NoError(t, KubectlApplyFromKustomizeE(t, options, configPath))
+}
+
+// KubectlApplyFromKustomizeE will take in a kustomization directory path and apply it to the cluster targeted by KubectlOptions.
+func KubectlApplyFromKustomizeE(t testing.TestingT, options *KubectlOptions, configPath string) error {
+	return RunKubectlE(t, options, "apply", "-k", configPath)
 }
 
 // KubectlApplyFromString will take in a kubernetes resource config as a string and apply it on the cluster specified
@@ -112,7 +134,7 @@ func StoreConfigToTempFile(t testing.TestingT, configData string) string {
 // filename, or error.
 func StoreConfigToTempFileE(t testing.TestingT, configData string) (string, error) {
 	escapedTestName := url.PathEscape(t.Name())
-	tmpfile, err := ioutil.TempFile("", escapedTestName)
+	tmpfile, err := os.CreateTemp("", escapedTestName)
 	if err != nil {
 		return "", err
 	}

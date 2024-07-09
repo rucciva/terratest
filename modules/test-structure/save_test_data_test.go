@@ -1,14 +1,13 @@
 package test_structure
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/files"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type testData struct {
@@ -23,7 +22,7 @@ func TestSaveAndLoadTestData(t *testing.T) {
 	isTestDataPresent := IsTestDataPresent(t, "/file/that/does/not/exist")
 	assert.False(t, isTestDataPresent, "Expected no test data would be present because no test data file exists.")
 
-	tmpFile, err := ioutil.TempFile("", "save-and-load-test-data")
+	tmpFile, err := os.CreateTemp("", "save-and-load-test-data")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -37,12 +36,22 @@ func TestSaveAndLoadTestData(t *testing.T) {
 	isTestDataPresent = IsTestDataPresent(t, tmpFile.Name())
 	assert.False(t, isTestDataPresent, "Expected no test data would be present because file exists but no data has been written yet.")
 
-	SaveTestData(t, tmpFile.Name(), expectedData)
+	overwrite := true
+	SaveTestData(t, tmpFile.Name(), overwrite, expectedData)
 
 	isTestDataPresent = IsTestDataPresent(t, tmpFile.Name())
 	assert.True(t, isTestDataPresent, "Expected test data would be present because file exists and data has been written to file.")
 
 	actualData := testData{}
+	LoadTestData(t, tmpFile.Name(), &actualData)
+	assert.Equal(t, expectedData, actualData)
+
+	overwritingData := testData{
+		Foo: "foo",
+		Bar: false,
+		Baz: map[string]interface{}{"123": "456", "789": 1.0, "0": false},
+	}
+	SaveTestData(t, tmpFile.Name(), !overwrite, overwritingData)
 	LoadTestData(t, tmpFile.Name(), &actualData)
 	assert.Equal(t, expectedData, actualData)
 
@@ -96,10 +105,7 @@ func TestIsEmptyJson(t *testing.T) {
 func TestSaveAndLoadTerraformOptions(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-terratest-options")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	expectedData := &terraform.Options{
 		TerraformDir: "/abc/def/ghi",
@@ -111,13 +117,52 @@ func TestSaveAndLoadTerraformOptions(t *testing.T) {
 	assert.Equal(t, expectedData, actualData)
 }
 
+func TestSaveTerraformOptionsIfNotPresent(t *testing.T) {
+	t.Parallel()
+
+	tmpFolder := t.TempDir()
+
+	expectedData := &terraform.Options{
+		TerraformDir: "/abc/def/ghi",
+		Vars:         map[string]interface{}{},
+	}
+	SaveTerraformOptionsIfNotPresent(t, tmpFolder, expectedData)
+
+	overwritingData := &terraform.Options{
+		TerraformDir: "/123/456/789",
+		Vars:         map[string]interface{}{},
+	}
+	SaveTerraformOptionsIfNotPresent(t, tmpFolder, overwritingData)
+
+	actualData := LoadTerraformOptions(t, tmpFolder)
+	assert.Equal(t, expectedData, actualData)
+}
+
+func TestSaveTerraformOptionsOverwrite(t *testing.T) {
+	t.Parallel()
+
+	tmpFolder := t.TempDir()
+
+	originaData := &terraform.Options{
+		TerraformDir: "/abc/def/ghi",
+		Vars:         map[string]interface{}{},
+	}
+	SaveTerraformOptions(t, tmpFolder, originaData)
+
+	overwritingData := &terraform.Options{
+		TerraformDir: "/123/456/789",
+		Vars:         map[string]interface{}{},
+	}
+	SaveTerraformOptions(t, tmpFolder, overwritingData)
+
+	actualData := LoadTerraformOptions(t, tmpFolder)
+	assert.Equal(t, overwritingData, actualData)
+}
+
 func TestSaveAndLoadAmiId(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-ami-id")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	expectedData := "ami-abcd1234"
 	SaveAmiId(t, tmpFolder, expectedData)
@@ -129,10 +174,7 @@ func TestSaveAndLoadAmiId(t *testing.T) {
 func TestSaveAndLoadArtifactID(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-artifact-id")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	expectedData := "terratest-packer-example-2018-08-08t15-35-19z"
 	SaveArtifactID(t, tmpFolder, expectedData)
@@ -144,10 +186,7 @@ func TestSaveAndLoadArtifactID(t *testing.T) {
 func TestSaveAndLoadNamedStrings(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-named-strings")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	name1 := "test-ami"
 	expectedData1 := "ami-abcd1234"
@@ -180,10 +219,7 @@ func TestSaveAndLoadNamedStrings(t *testing.T) {
 func TestSaveDuplicateTestData(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-duplicate-test-data")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	name := "hello-world"
 	val1 := "hello world"
@@ -200,10 +236,7 @@ func TestSaveDuplicateTestData(t *testing.T) {
 func TestSaveAndLoadNamedInts(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-named-ints")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
+	tmpFolder := t.TempDir()
 
 	name1 := "test-int1"
 	expectedData1 := 23842834
@@ -224,8 +257,7 @@ func TestSaveAndLoadNamedInts(t *testing.T) {
 func TestSaveAndLoadKubectlOptions(t *testing.T) {
 	t.Parallel()
 
-	tmpFolder, err := ioutil.TempDir("", "save-and-load-kubectl-options")
-	require.NoError(t, err)
+	tmpFolder := t.TempDir()
 
 	expectedData := &k8s.KubectlOptions{
 		ContextName: "terratest-context",

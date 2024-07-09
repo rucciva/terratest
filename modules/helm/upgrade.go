@@ -3,7 +3,7 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/terratest/modules/files"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/stretchr/testify/require"
@@ -27,9 +27,19 @@ func UpgradeE(t testing.TestingT, options *Options, chart string, releaseName st
 		chart = absChartDir
 	}
 
+	// build chart dependencies
+	if options.BuildDependencies {
+		if _, err := RunHelmCommandAndGetOutputE(t, options, "dependency", "build", chart); err != nil {
+			return errors.WithStackTrace(err)
+		}
+	}
 	var err error
 	args := []string{}
-	args = append(args, getNamespaceArgs(options)...)
+	if options.ExtraArgs != nil {
+		if upgradeArgs, ok := options.ExtraArgs["upgrade"]; ok {
+			args = append(args, upgradeArgs...)
+		}
+	}
 	args, err = getValuesArgsE(t, options, args...)
 	if err != nil {
 		return err

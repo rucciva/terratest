@@ -2,12 +2,11 @@ package k8s
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 
-	gwErrors "github.com/gruntwork-io/gruntwork-cli/errors"
+	gwErrors "github.com/gruntwork-io/go-commons/errors"
 	homedir "github.com/mitchellh/go-homedir"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -167,7 +166,7 @@ func CopyHomeKubeConfigToTempE(t testing.TestingT) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tmpConfig, err := ioutil.TempFile("", "")
+	tmpConfig, err := os.CreateTemp("", "")
 	if err != nil {
 		return "", gwErrors.WithStackTrace(err)
 	}

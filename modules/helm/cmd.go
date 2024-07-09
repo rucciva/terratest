@@ -1,7 +1,7 @@
 package helm
 
 import (
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -35,6 +35,7 @@ func getNamespaceArgs(options *Options) []string {
 func getValuesArgsE(t testing.TestingT, options *Options, args ...string) ([]string, error) {
 	args = append(args, formatSetValuesAsArgs(options.SetValues, "--set")...)
 	args = append(args, formatSetValuesAsArgs(options.SetStrValues, "--set-string")...)
+	args = append(args, formatSetValuesAsArgs(options.SetJsonValues, "--set-json")...)
 
 	valuesFilesArgs, err := formatValuesFilesAsArgsE(t, options.ValuesFiles)
 	if err != nil {
@@ -50,10 +51,22 @@ func getValuesArgsE(t testing.TestingT, options *Options, args ...string) ([]str
 	return args, nil
 }
 
-// RunHelmCommandAndGetOutputE runs helm with the given arguments and options and returns stdout/stderr.
+// RunHelmCommandAndGetOutputE runs helm with the given arguments and options and returns combined, interleaved stdout/stderr.
 func RunHelmCommandAndGetOutputE(t testing.TestingT, options *Options, cmd string, additionalArgs ...string) (string, error) {
+	helmCmd := prepareHelmCommand(t, options, cmd, additionalArgs...)
+	return shell.RunCommandAndGetOutputE(t, helmCmd)
+}
+
+// RunHelmCommandAndGetStdOutE runs helm with the given arguments and options and returns stdout.
+func RunHelmCommandAndGetStdOutE(t testing.TestingT, options *Options, cmd string, additionalArgs ...string) (string, error) {
+	helmCmd := prepareHelmCommand(t, options, cmd, additionalArgs...)
+	return shell.RunCommandAndGetStdOutE(t, helmCmd)
+}
+
+func prepareHelmCommand(t testing.TestingT, options *Options, cmd string, additionalArgs ...string) shell.Command {
 	args := []string{cmd}
 	args = getCommonArgs(options, args...)
+	args = append(args, getNamespaceArgs(options)...)
 	args = append(args, additionalArgs...)
 
 	helmCmd := shell.Command{
@@ -63,5 +76,5 @@ func RunHelmCommandAndGetOutputE(t testing.TestingT, options *Options, cmd strin
 		Env:        options.EnvVars,
 		Logger:     options.Logger,
 	}
-	return shell.RunCommandAndGetOutputE(t, helmCmd)
+	return helmCmd
 }

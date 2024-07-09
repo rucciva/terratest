@@ -2,9 +2,15 @@
 # PIN TERRAFORM VERSION TO >= 0.12
 # The examples have been upgraded to 0.12 syntax
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = var.region
+}
 
 terraform {
-  required_version = ">= 0.12"
+  # This module is now only being tested with Terraform 0.13.x. However, to make upgrading easier, we are setting
+  # 0.12.26 as the minimum version, as that version added support for required_providers with source URLs, making it
+  # forwards compatible with 0.13.x code.
+  required_version = ">= 0.12.26"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -17,8 +23,11 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "all" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnets" "all" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -41,7 +50,7 @@ resource "aws_ecs_service" "example" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets = data.aws_subnet_ids.all.ids
+    subnets = data.aws_subnets.all.ids
   }
 }
 

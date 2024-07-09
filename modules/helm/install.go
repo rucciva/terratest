@@ -3,7 +3,7 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/gruntwork-io/terratest/modules/files"
@@ -28,11 +28,21 @@ func InstallE(t testing.TestingT, options *Options, chart string, releaseName st
 		chart = absChartDir
 	}
 
+	// build chart dependencies
+	if options.BuildDependencies {
+		if _, err := RunHelmCommandAndGetOutputE(t, options, "dependency", "build", chart); err != nil {
+			return errors.WithStackTrace(err)
+		}
+	}
 	// Now call out to helm install to install the charts with the provided options
 	// Declare err here so that we can update args later
 	var err error
 	args := []string{}
-	args = append(args, getNamespaceArgs(options)...)
+	if options.ExtraArgs != nil {
+		if installArgs, ok := options.ExtraArgs["install"]; ok {
+			args = append(args, installArgs...)
+		}
+	}
 	if options.Version != "" {
 		args = append(args, "--version", options.Version)
 	}

@@ -4,7 +4,10 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 terraform {
-  required_version = ">= 0.12"
+  # This module is now only being tested with Terraform 0.13.x. However, to make upgrading easier, we are setting
+  # 0.12.26 as the minimum version, as that version added support for required_providers with source URLs, making it
+  # forwards compatible with 0.13.x code.
+  required_version = ">= 0.12.26"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -32,7 +35,7 @@ resource "aws_autoscaling_group" "web_servers" {
   min_elb_capacity = 3
 
   # Deploy into all the subnets (and therefore AZs) available
-  vpc_zone_identifier = data.aws_subnet_ids.default.ids
+  vpc_zone_identifier = data.aws_subnets.default.ids
 
   # Automatically register this ASG's Instances in the ALB and use the ALB's health check to determine when an Instance
   # needs to be replaced
@@ -66,7 +69,7 @@ resource "aws_autoscaling_group" "web_servers" {
 
 resource "aws_launch_configuration" "web_servers" {
   image_id        = data.aws_ami.ubuntu.id
-  instance_type   = "t2.micro"
+  instance_type   = var.instance_type
   security_groups = [aws_security_group.web_server.id]
   user_data       = data.template_file.user_data.rendered
   key_name        = var.key_pair_name
@@ -93,7 +96,7 @@ data "template_file" "user_data" {
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
-# FOR THIS EXAMPLE, WE JUST RUN A PLAIN UBUNTU 16.04 AMI
+# FOR THIS EXAMPLE, WE JUST RUN A PLAIN UBUNTU 22.04 AMI
 # ---------------------------------------------------------------------------------------------------------------------
 
 data "aws_ami" "ubuntu" {
@@ -117,7 +120,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 }
 
@@ -170,7 +173,7 @@ resource "aws_security_group_rule" "web_server_allow_all_outbound" {
 resource "aws_alb" "web_servers" {
   name            = var.instance_name
   security_groups = [aws_security_group.alb.id]
-  subnets         = data.aws_subnet_ids.default.ids
+  subnets         = data.aws_subnets.default.ids
 
   # This is here because aws_alb_listener.http depends on this resource and sets create_before_destroy to true
   lifecycle {
@@ -247,8 +250,9 @@ resource "aws_alb_listener_rule" "send_all_to_web_servers" {
   }
 
   condition {
-    field  = "path-pattern"
-    values = ["*"]
+    path_pattern {
+      values = ["*"]
+    }
   }
 }
 
@@ -290,7 +294,14 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "default" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+  filter {
+    name   = "defaultForAz"
+    values = [true]
+  }
 }
 

@@ -1,3 +1,4 @@
+//go:build kubeall || kubernetes
 // +build kubeall kubernetes
 
 // NOTE: we have build tags to differentiate kubernetes tests from non-kubernetes tests. This is done because minikube
@@ -30,7 +31,7 @@ func TestDeleteConfigContext(t *testing.T) {
 	data, err := ioutil.ReadFile(path)
 	require.NoError(t, err)
 	storedConfig := string(data)
-	assert.Equal(t, storedConfig, BASIC_CONFIG)
+	assert.Equal(t, BASIC_CONFIG, storedConfig)
 }
 
 func TestDeleteConfigContextWithAnotherContextRemaining(t *testing.T) {
@@ -45,7 +46,7 @@ func TestDeleteConfigContextWithAnotherContextRemaining(t *testing.T) {
 	data, err := ioutil.ReadFile(path)
 	require.NoError(t, err)
 	storedConfig := string(data)
-	assert.Equal(t, storedConfig, EXPECTED_CONFIG_AFTER_EXTRA_MINIKUBE_DELETED_NO_GARBAGE)
+	assert.Equal(t, EXPECTED_CONFIG_AFTER_EXTRA_MINIKUBE_DELETED_NO_GARBAGE, storedConfig)
 }
 
 func TestRemoveOrphanedClusterAndAuthInfoConfig(t *testing.T) {
@@ -91,7 +92,7 @@ func removeOrphanedClusterAndAuthInfoConfigTestFunc(t *testing.T, inputConfig st
 	data, err := ioutil.ReadFile(path)
 	require.NoError(t, err)
 	storedConfig := string(data)
-	assert.Equal(t, storedConfig, expectedOutputConfig)
+	assert.Equal(t, expectedOutputConfig, storedConfig)
 }
 
 // Various example configs used in testing the config manipulation functions

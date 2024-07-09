@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/gruntwork-io/terratest/modules/collections"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -20,18 +21,38 @@ func generateCommand(options *Options, args ...string) shell.Command {
 	return cmd
 }
 
+var commandsWithParallelism = []string{
+	"plan",
+	"apply",
+	"destroy",
+	"plan-all",
+	"run-all",
+	"apply-all",
+	"destroy-all",
+}
+
+const (
+	// TofuDefaultPath command to run tofu
+	TofuDefaultPath = "tofu"
+
+	// TerraformDefaultPath to run terraform
+	TerraformDefaultPath = "terraform"
+)
+
+var DefaultExecutable = defaultTerraformExecutable()
+
 // GetCommonOptions extracts commons terraform options
 func GetCommonOptions(options *Options, args ...string) (*Options, []string) {
-	if options.NoColor && !collections.ListContains(args, "-no-color") {
-		args = append(args, "-no-color")
-	}
-
 	if options.TerraformBinary == "" {
-		options.TerraformBinary = "terraform"
+		options.TerraformBinary = DefaultExecutable
 	}
 
 	if options.TerraformBinary == "terragrunt" {
 		args = append(args, "--terragrunt-non-interactive")
+	}
+
+	if options.Parallelism > 0 && len(args) > 0 && collections.ListContains(commandsWithParallelism, args[0]) {
+		args = append(args, fmt.Sprintf("--parallelism=%d", options.Parallelism))
 	}
 
 	// if SshAgent is provided, override the local SSH agent with the socket of our in-process agent
@@ -101,4 +122,18 @@ func GetExitCodeForTerraformCommandE(t testing.TestingT, additionalOptions *Opti
 		return exitCode, nil
 	}
 	return DefaultErrorExitCode, getExitCodeErr
+}
+
+func defaultTerraformExecutable() string {
+	cmd := exec.Command(TerraformDefaultPath, "-version")
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	if err := cmd.Run(); err == nil {
+		return TerraformDefaultPath
+	}
+
+	// fallback to Tofu if terraform is not available
+	return TofuDefaultPath
 }

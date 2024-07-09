@@ -4,7 +4,10 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 terraform {
-  required_version = ">= 0.12"
+  # This module is now only being tested with Terraform 0.13.x. However, to make upgrading easier, we are setting
+  # 0.12.26 as the minimum version, as that version added support for required_providers with source URLs, making it
+  # forwards compatible with 0.13.x code.
+  required_version = ">= 0.12.26"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -23,14 +26,13 @@ provider "aws" {
 resource "aws_launch_template" "sample_launch_template" {
   name_prefix            = var.instance_name
   image_id               = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.example.id]
   key_name               = var.key_pair_name
 }
 
 resource "aws_autoscaling_group" "sample_asg" {
-  vpc_zone_identifier = data.aws_subnet_ids.default_subnets.ids
-  availability_zones  = []
+  vpc_zone_identifier = data.aws_subnets.default_subnets.ids
 
   desired_capacity = 1
   max_size         = 1
@@ -92,7 +94,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 }
 
@@ -100,7 +102,14 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "default_subnets" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnets" "default_subnets" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+  filter {
+    name   = "defaultForAz"
+    values = [true]
+  }
 }
 

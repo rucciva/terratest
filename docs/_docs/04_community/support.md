@@ -10,22 +10,22 @@ nav_title: Documentation
 nav_title_link: /docs/
 ---
 
-## Stack Overflow
+## Github Discussions
 
-Many developers use Stack Overflow to find help. Use the `terratest` tag to find [existing questions](https://stackoverflow.com/questions/tagged/terratest) or [ask your own](https://stackoverflow.com/questions/ask?tags=terratest).
+Search our [Knowledge Base](https://github.com/gruntwork-io/knowledge-base/discussions) to find existing questions or ask your own. Github Discussions is a good place for general discussions and questions.
 
 ## Github Issues
 
 Read through [existing issues](https://github.com/gruntwork-io/terratest/issues) or post a new one. Github issues is a good place to:
 
-  - report a bug,
+- report a bug,
 
-  - ask for a help,
+- ask for a help,
 
-  - ask for improvements,
+- ask for improvements,
 
-  - to start contributing by solving simple issues.
+- to start contributing by solving simple issues.
 
 ## Commercial support
 
-If you need help with Terratest or anything else related to infrastructure or DevOps, Gruntwork offers [Commercial Support](https://gruntwork.io/support/) via Slack, email, and phone/video. If you’re already a Gruntwork customer, hop on Slack and ask away\! If not, [subscribe now](https://www.gruntwork.io/pricing/). If you’re not sure, feel free to email us at <support@gruntwork.io>.
+Does your company rely on Terratest in production? If so, you can get commercial support directly from Gruntwork, the creators of Terratest! Check out the [Gruntwork Support Page](https://gruntwork.io/support) for more details.

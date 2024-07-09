@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,11 +81,16 @@ func createTerraformOptions(t *testing.T, exampleFolder string) (*terraform.Opti
 	// Pick a random AWS region to test in. This helps ensure your code works in all regions.
 	awsRegion := aws.GetRandomStableRegion(t, nil, nil)
 
+	// Some AWS regions are missing certain instance types, so pick an available type based on the region we picked
+	instanceType := aws.GetRecommendedInstanceType(t, awsRegion, []string{"t2.micro, t3.micro", "t2.small", "t3.small"})
+
 	// Create an EC2 KeyPair that we can use for SSH access
 	keyPairName := fmt.Sprintf("terratest-asg-scp-example-%s", uniqueID)
 	keyPair := aws.CreateAndImportEC2KeyPair(t, awsRegion, keyPairName)
 
-	terraformOptions := &terraform.Options{
+	// Construct the terraform options with default retryable errors to handle the most common retryable errors in
+	// terraform testing.
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		// The path to where our Terraform code is located
 		TerraformDir: exampleFolder,
 
@@ -95,8 +99,9 @@ func createTerraformOptions(t *testing.T, exampleFolder string) (*terraform.Opti
 			"aws_region":    awsRegion,
 			"instance_name": instanceName,
 			"key_pair_name": keyPairName,
+			"instance_type": instanceType,
 		},
-	}
+	})
 
 	return terraformOptions, keyPair
 }
@@ -159,7 +164,7 @@ func testScpDirFromHost(t *testing.T, terraformOptions *terraform.Options, keyPa
 
 			expectedNumFiles := testCase.expectedFiles
 
-			fileInfos, err := ioutil.ReadDir(testCase.options.LocalDir)
+			fileInfos, err := os.ReadDir(testCase.options.LocalDir)
 
 			if err != nil {
 				t.Fatalf("Error reading from local dir: %s, due to: %s", testCase.options.LocalDir, err.Error())
@@ -209,7 +214,7 @@ func testScpFromHost(t *testing.T, terraformOptions *terraform.Options, keyPair 
 
 	ssh.ScpFileFromE(t, publicHost, remoteTempFilePath, localFile, false)
 
-	buf, err := ioutil.ReadFile(localTempFileName)
+	buf, err := os.ReadFile(localTempFileName)
 
 	if err != nil {
 		t.Fatalf("Error: Unable to read local file from disk: %s", err.Error())
@@ -261,7 +266,7 @@ func testScpFromAsg(t *testing.T, terraformOptions *terraform.Options, keyPair *
 	defer os.RemoveAll(localDestinationDirectory)
 
 	//Read the locally copied syslog
-	buf, err := ioutil.ReadFile(localSyslogLocation)
+	buf, err := os.ReadFile(localSyslogLocation)
 
 	if err != nil {
 		t.Fatalf("Error: Unable to read local file from disk: %s", err.Error())

@@ -16,7 +16,7 @@ custom_js:
 
 Terratest uses the Go testing framework. To use Terratest, you need to install:
 
-- [Go](https://golang.org/) (requires version >=1.13)
+- [Go](https://golang.org/) (requires version >=1.21.1)
 
 ## Setting up your project
 
@@ -26,7 +26,7 @@ types of infrastructure code you can test (e.g., Packer, Kubernetes, etc).
 
 1. Create an `examples` and `test` folder.
 
-1. Copy all the files from the [basic terraform example](https://github.com/gruntwork-io/terratest/tree/master/examples/terraform-basic-example/) into the `examples` folder.
+1. Copy the folder including all the files from the [basic terraform example](https://github.com/gruntwork-io/terratest/tree/master/examples/terraform-basic-example/) into the `examples` folder.
 
 1. Copy the [basic terraform example test](https://github.com/gruntwork-io/terratest/blob/master/test/terraform_basic_example_test.go) into the `test` folder.
 
@@ -35,6 +35,7 @@ types of infrastructure code you can test (e.g., Packer, Kubernetes, etc).
     ```bash
     cd test
     go mod init "<MODULE_NAME>"
+    go mod tidy
     ```
 
     Where `<MODULE_NAME>` is the name of your module, typically in the format
@@ -184,7 +185,7 @@ extra sure that the test always has a chance to finish cleanly.
 
 ## Example #3: Docker
 
-You can use Terratest for testing a variety of infrastructure code and not Terraform. For example, you can use it to 
+You can use Terratest for testing a variety of infrastructure code, not just Terraform. For example, you can use it to
 test your [Docker](https://www.docker.com/) images:
 
 {% include examples/explorer.html example_id='docker-hello-world' file_id='docker_code' class='wide quick-start-examples' skip_learn_more=true skip_view_on_github=true skip_tags=true %}
@@ -220,7 +221,7 @@ To test this code manually, you would:
 1. Run `kubectl apply` to deploy the Docker training webapp.
 1. Use the Kubernetes APIs to figure out the endpoint to hit for the load balancer.
 1. Open the endpoint in your web browser on port 5000 and make sure it says “Hello, World”. Note that, depending on 
-   your Kubernetes cluster, it could take a minute or two for the Docker container to come p, so you may have to retry 
+   your Kubernetes cluster, it could take a minute or two for the Docker container to come up, so you may have to retry 
    a few times.
 1. When you're done testing, run `kubectl delete` to clean everything up.
 
@@ -230,7 +231,7 @@ Here's how you automate this process with Terratest:
 
 The test code above uses Kuberenetes helpers built into Terratest to run `kubectl apply`, wait for the service to come
 up, get the service endpoint, make HTTP requests to the service (with plenty of retries), check the response is what
-we expect, and runs `kubectly delete` at the end. You run this test with `go test` as well! 
+we expect, and runs `kubectl delete` at the end. You run this test with `go test` as well! 
 
 
 ## Give it a shot!

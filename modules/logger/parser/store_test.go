@@ -1,21 +1,19 @@
 package parser
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/gruntwork-io/gruntwork-cli/files"
+	"github.com/gruntwork-io/go-commons/files"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/assert"
 )
 
 func createLogWriter(t *testing.T) LogWriter {
-	dir := getTempDir(t)
 	logWriter := LogWriter{
 		lookup:    make(map[string]*os.File),
-		outputDir: dir,
+		outputDir: t.TempDir(),
 	}
 	return logWriter
 }
@@ -23,8 +21,7 @@ func createLogWriter(t *testing.T) LogWriter {
 func TestEnsureDirectoryExistsCreatesDirectory(t *testing.T) {
 	t.Parallel()
 
-	dir := getTempDir(t)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	logger := NewTestLogger(t)
 	tmpd := filepath.Join(dir, "tmpdir")
@@ -36,8 +33,7 @@ func TestEnsureDirectoryExistsCreatesDirectory(t *testing.T) {
 func TestEnsureDirectoryExistsHandlesExistingDirectory(t *testing.T) {
 	t.Parallel()
 
-	dir := getTempDir(t)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	logger := NewTestLogger(t)
 	assert.True(t, files.IsDir(dir))
@@ -49,7 +45,6 @@ func TestGetOrCreateFileCreatesNewFile(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	logger := NewTestLogger(t)
 	testFileName := filepath.Join(logWriter.outputDir, t.Name()+".log")
@@ -65,7 +60,6 @@ func TestGetOrCreateFileCreatesNewFileIfTestNameHasDir(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	logger := NewTestLogger(t)
 	dirName := filepath.Join(logWriter.outputDir, "TestMain")
@@ -84,7 +78,6 @@ func TestGetOrCreateChannelReturnsExistingFileHandle(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	testName := t.Name()
 	logger := NewTestLogger(t)
@@ -105,7 +98,6 @@ func TestCloseFilesClosesAll(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	logger := NewTestLogger(t)
 	testName := t.Name()
@@ -134,7 +126,6 @@ func TestWriteLogWritesToCorrectLogFile(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	logger := NewTestLogger(t)
 	testName := t.Name()
@@ -161,10 +152,10 @@ func TestWriteLogWritesToCorrectLogFile(t *testing.T) {
 	err = logWriter.writeLog(logger, alternativeTestName, alternativeRandomString)
 	assert.Nil(t, err)
 
-	buf, err := ioutil.ReadFile(testFileName)
+	buf, err := os.ReadFile(testFileName)
 	assert.Nil(t, err)
 	assert.Equal(t, string(buf), randomString+"\n")
-	buf, err = ioutil.ReadFile(alternativeTestFileName)
+	buf, err = os.ReadFile(alternativeTestFileName)
 	assert.Nil(t, err)
 	assert.Equal(t, string(buf), alternativeRandomString+"\n")
 }
@@ -173,7 +164,6 @@ func TestWriteLogCreatesLogFileIfNotExists(t *testing.T) {
 	t.Parallel()
 
 	logWriter := createLogWriter(t)
-	defer os.RemoveAll(logWriter.outputDir)
 
 	logger := NewTestLogger(t)
 	testName := t.Name()
@@ -184,7 +174,7 @@ func TestWriteLogCreatesLogFileIfNotExists(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.True(t, files.FileExists(testFileName))
-	buf, err := ioutil.ReadFile(testFileName)
+	buf, err := os.ReadFile(testFileName)
 	assert.Nil(t, err)
 	assert.Equal(t, string(buf), randomString+"\n")
 }
