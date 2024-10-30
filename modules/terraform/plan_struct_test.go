@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,10 +13,10 @@ const (
 	// NOTE: We pull down the json files from github during test runtime as opposed to checking it in as these source
 	// files are licensed under MPL and we want to avoid a dual license scenario where some source files in terratest
 	// are licensed under a different license.
-	basicJsonUrl      = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.8.0/testdata/basic/plan.json"
-	deepModuleJsonUrl = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.8.0/testdata/deep_module/plan.json"
+	basicJsonUrl      = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.13.0/testdata/basic/plan.json"
+	deepModuleJsonUrl = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.13.0/testdata/deep_module/plan.json"
 
-	changesJsonUrl = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.8.0/testdata/has_changes/plan.json"
+	changesJsonUrl = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.13.0/testdata/has_changes/plan.json"
 )
 
 func TestPlannedValuesMapWithBasicJson(t *testing.T) {
@@ -77,5 +78,26 @@ func TestResourceChangesJson(t *testing.T) {
 	barChanges := plan.ResourceChangesMap["null_resource.bar"]
 	require.NotNil(t, barChanges.Change)
 	assert.Equal(t, barChanges.Change.After.(map[string]interface{})["triggers"].(map[string]interface{})["foo_id"].(string), "424881806176056736")
+}
 
+func TestOutputChangesJson(t *testing.T) {
+	t.Parallel()
+
+	// Retrieve test data from the terraform-json project.
+	_, jsonData := http_helper.HttpGet(t, changesJsonUrl, nil)
+	plan, err := ParsePlanJSON(jsonData)
+	require.NoError(t, err)
+
+	// Spot check a few changes to make sure the right address was registered
+	RequireOutputChangesMapKeyExists(t, plan, "foo")
+	fooChanges := plan.OutputChangesMap["foo"]
+	require.NotNil(t, fooChanges)
+	assert.Equal(t, fooChanges.Actions, tfjson.Actions{"create"})
+	assert.Equal(t, fooChanges.After, "bar")
+
+	RequireOutputChangesMapKeyExists(t, plan, "map")
+	mapChanges := plan.OutputChangesMap["map"]
+	require.NotNil(t, mapChanges)
+	assert.Equal(t, mapChanges.Actions, tfjson.Actions{"create"})
+	assert.Equal(t, mapChanges.After.(map[string]interface{}), map[string]interface{}{"foo": "bar", "number": float64(42)})
 }
