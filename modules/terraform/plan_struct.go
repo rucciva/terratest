@@ -49,8 +49,8 @@ func ParsePlanJSON(jsonStr string) (*PlanStruct, error) {
 // If there are no changes, this returns an empty map instead of erroring
 func parseOutputChanges(plan *PlanStruct) map[string]*tfjson.Change {
 	out := map[string]*tfjson.Change{}
-	for output_name, change := range plan.RawPlan.OutputChanges {
-		out[output_name] = change
+	for outputName, change := range plan.RawPlan.OutputChanges {
+		out[outputName] = change
 	}
 	return out
 }

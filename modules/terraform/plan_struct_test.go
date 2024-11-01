@@ -19,11 +19,17 @@ const (
 	changesJsonUrl = "https://raw.githubusercontent.com/hashicorp/terraform-json/v0.13.0/testdata/has_changes/plan.json"
 )
 
+func validateHTTPSuccess(statusCode int) bool {
+	return statusCode >= 200 && statusCode < 300
+}
+
 func TestPlannedValuesMapWithBasicJson(t *testing.T) {
 	t.Parallel()
 
 	// Retrieve test data from the terraform-json project.
-	_, jsonData := http_helper.HttpGet(t, basicJsonUrl, nil)
+	statusCode, jsonData := http_helper.HttpGet(t, basicJsonUrl, nil)
+	require.True(t, validateHTTPSuccess(statusCode))
+
 	plan, err := ParsePlanJSON(jsonData)
 	require.NoError(t, err)
 
@@ -48,7 +54,9 @@ func TestPlannedValuesMapWithDeepModuleJson(t *testing.T) {
 	t.Parallel()
 
 	// Retrieve test data from the terraform-json project.
-	_, jsonData := http_helper.HttpGet(t, deepModuleJsonUrl, nil)
+	statusCode, jsonData := http_helper.HttpGet(t, deepModuleJsonUrl, nil)
+	require.True(t, validateHTTPSuccess(statusCode))
+
 	plan, err := ParsePlanJSON(jsonData)
 	require.NoError(t, err)
 
@@ -64,7 +72,9 @@ func TestResourceChangesJson(t *testing.T) {
 	t.Parallel()
 
 	// Retrieve test data from the terraform-json project.
-	_, jsonData := http_helper.HttpGet(t, changesJsonUrl, nil)
+	statusCode, jsonData := http_helper.HttpGet(t, changesJsonUrl, nil)
+	require.True(t, validateHTTPSuccess(statusCode))
+
 	plan, err := ParsePlanJSON(jsonData)
 	require.NoError(t, err)
 
@@ -84,7 +94,9 @@ func TestOutputChangesJson(t *testing.T) {
 	t.Parallel()
 
 	// Retrieve test data from the terraform-json project.
-	_, jsonData := http_helper.HttpGet(t, changesJsonUrl, nil)
+	statusCode, jsonData := http_helper.HttpGet(t, changesJsonUrl, nil)
+	require.True(t, validateHTTPSuccess(statusCode))
+
 	plan, err := ParsePlanJSON(jsonData)
 	require.NoError(t, err)
 
@@ -95,7 +107,7 @@ func TestOutputChangesJson(t *testing.T) {
 	assert.Equal(t, fooChanges.Actions, tfjson.Actions{"create"})
 	assert.Equal(t, fooChanges.After, "bar")
 
-	RequireOutputChangesMapKeyExists(t, plan, "map")
+	AssertOutputChangesMapKeyExists(t, plan, "map")
 	mapChanges := plan.OutputChangesMap["map"]
 	require.NotNil(t, mapChanges)
 	assert.Equal(t, mapChanges.Actions, tfjson.Actions{"create"})
