@@ -1,12 +1,13 @@
 package opa
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
-	getter "github.com/hashicorp/go-getter"
+	getter "github.com/hashicorp/go-getter/v2"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -31,18 +32,13 @@ var (
 // git::https://github.com/gruntwork-io/terratest.git//examples/bar.rego?ref=v0.39.3), then that will be cloned to a new
 // temporary directory rather than the cached dir.
 func DownloadPolicyE(t testing.TestingT, rulePath string) (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	detected, err := getter.Detect(rulePath, cwd, getter.Detectors)
+	detected, err := detectGetter(rulePath)
 	if err != nil {
 		return "", err
 	}
 
 	// File getters are assumed to be a local path reference, so pass through the original path.
-	if strings.HasPrefix(detected, "file") {
+	if _, ok := detected.(*getter.FileGetter); ok {
 		return rulePath, nil
 	}
 
@@ -66,9 +62,32 @@ func DownloadPolicyE(t testing.TestingT, rulePath string) (string, error) {
 	tempDir = filepath.Join(tempDir, "getter")
 
 	logger.Default.Logf(t, "Downloading %s to temp dir %s", rulePath, tempDir)
-	if err := getter.GetAny(tempDir, baseDir); err != nil {
+	if _, err := getter.GetAny(context.Background(), tempDir, baseDir); err != nil {
 		return "", err
 	}
 	policyDirCache.Store(baseDir, tempDir)
 	return filepath.Join(tempDir, subDir), nil
+}
+
+// detectGetter find suitable getter.Getter by rulePath.
+func detectGetter(rulePath string) (getter.Getter, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	request := &getter.Request{
+		Src: rulePath,
+		Pwd: cwd,
+	}
+	for _, candidate := range getter.Getters {
+		ok, err := getter.Detect(request, candidate)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			return candidate, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid source string: %s", rulePath)
 }
