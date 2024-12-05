@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
 
@@ -26,7 +24,7 @@ func GetCmkArnE(t testing.TestingT, region string, cmkID string) (string, error)
 		return "", err
 	}
 
-	result, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
+	result, err := kmsClient.DescribeKey(&kms.DescribeKeyInput{
 		KeyId: aws.String(cmkID),
 	})
 
@@ -38,7 +36,7 @@ func GetCmkArnE(t testing.TestingT, region string, cmkID string) (string, error)
 }
 
 // NewKmsClient creates a KMS client.
-func NewKmsClient(t testing.TestingT, region string) *kms.Client {
+func NewKmsClient(t testing.TestingT, region string) *kms.KMS {
 	client, err := NewKmsClientE(t, region)
 	if err != nil {
 		t.Fatal(err)
@@ -47,11 +45,11 @@ func NewKmsClient(t testing.TestingT, region string) *kms.Client {
 }
 
 // NewKmsClientE creates a KMS client.
-func NewKmsClientE(t testing.TestingT, region string) (*kms.Client, error) {
+func NewKmsClientE(t testing.TestingT, region string) (*kms.KMS, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
 
-	return kms.NewFromConfig(*sess), nil
+	return kms.New(sess), nil
 }

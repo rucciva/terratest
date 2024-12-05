@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -31,12 +29,12 @@ func CreateSnsTopicE(t testing.TestingT, region string, snsTopicName string) (st
 		Name: &snsTopicName,
 	}
 
-	output, err := snsClient.CreateTopic(context.Background(), createTopicInput)
+	output, err := snsClient.CreateTopic(createTopicInput)
 	if err != nil {
 		return "", err
 	}
 
-	return aws.ToString(output.TopicArn), err
+	return aws.StringValue(output.TopicArn), err
 }
 
 // DeleteSNSTopic deletes an SNS Topic.
@@ -60,12 +58,12 @@ func DeleteSNSTopicE(t testing.TestingT, region string, snsTopicArn string) erro
 		TopicArn: aws.String(snsTopicArn),
 	}
 
-	_, err = snsClient.DeleteTopic(context.Background(), deleteTopicInput)
+	_, err = snsClient.DeleteTopic(deleteTopicInput)
 	return err
 }
 
 // NewSnsClient creates a new SNS client.
-func NewSnsClient(t testing.TestingT, region string) *sns.Client {
+func NewSnsClient(t testing.TestingT, region string) *sns.SNS {
 	client, err := NewSnsClientE(t, region)
 	if err != nil {
 		t.Fatal(err)
@@ -74,11 +72,11 @@ func NewSnsClient(t testing.TestingT, region string) *sns.Client {
 }
 
 // NewSnsClientE creates a new SNS client.
-func NewSnsClientE(t testing.TestingT, region string) (*sns.Client, error) {
+func NewSnsClientE(t testing.TestingT, region string) (*sns.SNS, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
 
-	return sns.NewFromConfig(*sess), nil
+	return sns.New(sess), nil
 }

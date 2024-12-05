@@ -1,13 +1,11 @@
 package aws
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -61,7 +59,7 @@ type LambdaOutput struct {
 	// The HTTP status code for a successful request is in the 200 range.
 	// For RequestResponse invocation type, the status code is 200.
 	// For the DryRun invocation type, the status code is 204.
-	StatusCode int32
+	StatusCode *int64
 }
 
 // InvokeFunction invokes a lambda function.
@@ -91,14 +89,14 @@ func InvokeFunctionE(t testing.TestingT, region, functionName string, payload in
 		invokeInput.Payload = payloadJson
 	}
 
-	out, err := lambdaClient.Invoke(context.Background(), invokeInput)
+	out, err := lambdaClient.Invoke(invokeInput)
 	require.NoError(t, err)
 	if err != nil {
 		return nil, err
 	}
 
 	if out.FunctionError != nil {
-		return out.Payload, &FunctionError{Message: *out.FunctionError, StatusCode: out.StatusCode, Payload: out.Payload}
+		return out.Payload, &FunctionError{Message: *out.FunctionError, StatusCode: *out.StatusCode, Payload: out.Payload}
 	}
 
 	return out.Payload, nil
@@ -125,7 +123,7 @@ func InvokeFunctionWithParamsE(t testing.TestingT, region, functionName string, 
 	}
 
 	// Verify the InvocationType is one of the allowed values and report
-	// an error if it's not.  By default, the InvocationType will be
+	// an error if it's not.  By default the InvocationType will be
 	// "RequestResponse".
 	invocationType, err := input.InvocationType.Value()
 	if err != nil {
@@ -134,7 +132,7 @@ func InvokeFunctionWithParamsE(t testing.TestingT, region, functionName string, 
 
 	invokeInput := &lambda.InvokeInput{
 		FunctionName:   &functionName,
-		InvocationType: types.InvocationType(invocationType),
+		InvocationType: &invocationType,
 	}
 
 	if input.Payload != nil {
@@ -145,7 +143,7 @@ func InvokeFunctionWithParamsE(t testing.TestingT, region, functionName string, 
 		invokeInput.Payload = payloadJson
 	}
 
-	out, err := lambdaClient.Invoke(context.Background(), invokeInput)
+	out, err := lambdaClient.Invoke(invokeInput)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +165,7 @@ func InvokeFunctionWithParamsE(t testing.TestingT, region, functionName string, 
 
 type FunctionError struct {
 	Message    string
-	StatusCode int32
+	StatusCode int64
 	Payload    []byte
 }
 
@@ -176,18 +174,18 @@ func (err *FunctionError) Error() string {
 }
 
 // NewLambdaClient creates a new Lambda client.
-func NewLambdaClient(t testing.TestingT, region string) *lambda.Client {
+func NewLambdaClient(t testing.TestingT, region string) *lambda.Lambda {
 	client, err := NewLambdaClientE(t, region)
 	require.NoError(t, err)
 	return client
 }
 
 // NewLambdaClientE creates a new Lambda client.
-func NewLambdaClientE(t testing.TestingT, region string) (*lambda.Client, error) {
+func NewLambdaClientE(t testing.TestingT, region string) (*lambda.Lambda, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
 
-	return lambda.NewFromConfig(*sess), nil
+	return lambda.New(sess), nil
 }

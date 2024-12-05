@@ -11,12 +11,12 @@ import (
 )
 
 func testGetCurrentBranchNameReturnsBranchName(t *testing.T) {
-	err := exec.Command("git", "checkout", "main").Run()
+	err := exec.Command("git", "checkout", "master").Run()
 	require.NoError(t, err)
 
 	name := GetCurrentBranchName(t)
 
-	assert.Equal(t, "main", name)
+	assert.Equal(t, "master", name)
 }
 
 func testGetCurrentBranchNameReturnsEmptyForDetachedState(t *testing.T) {
@@ -29,12 +29,12 @@ func testGetCurrentBranchNameReturnsEmptyForDetachedState(t *testing.T) {
 }
 
 func testGetCurrentRefReturnsBranchName(t *testing.T) {
-	err := exec.Command("git", "checkout", "main").Run()
+	err := exec.Command("git", "checkout", "master").Run()
 	require.NoError(t, err)
 
 	name := GetCurrentGitRef(t)
 
-	assert.Equal(t, "main", name)
+	assert.Equal(t, "master", name)
 }
 
 func testGetCurrentRefReturnsTagValue(t *testing.T) {

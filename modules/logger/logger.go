@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	gotesting "testing"
 	"time"
 
@@ -126,8 +125,6 @@ func Logf(t testing.TestingT, format string, args ...interface{}) {
 		tt.Helper()
 	}
 
-	mutexStdout.Lock()
-	defer mutexStdout.Unlock()
 	DoLog(t, 2, os.Stdout, fmt.Sprintf(format, args...))
 }
 
@@ -139,12 +136,8 @@ func Log(t testing.TestingT, args ...interface{}) {
 		tt.Helper()
 	}
 
-	mutexStdout.Lock()
-	defer mutexStdout.Unlock()
 	DoLog(t, 2, os.Stdout, args...)
 }
-
-var mutexStdout sync.Mutex
 
 // DoLog logs the given arguments to the given writer, along with a timestamp and information about what test and file is
 // doing the logging.

@@ -1,15 +1,13 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/packer"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -78,9 +76,10 @@ func TestPackerBasicExample(t *testing.T) {
 	assert.Contains(t, accountsWithLaunchPermissions, requestingAccount)
 
 	// website::tag::3::Check AMI's properties.
-	// Check if AMI is private
+	// Check if AMI is public
+	MakeAmiPublic(t, amiID, ec2Client)
 	amiIsPublic := terratest_aws.GetAmiPubliclyAccessible(t, awsRegion, amiID)
-	assert.False(t, amiIsPublic)
+	assert.True(t, amiIsPublic)
 }
 
 // An example of how to test the Packer template in examples/packer-basic-example using Terratest
@@ -111,7 +110,7 @@ func TestPackerBasicExampleWithVarFile(t *testing.T) {
 		// The path to where the Packer template is located
 		Template: "../examples/packer-basic-example/build.pkr.hcl",
 
-		// Variable file to pass to our Packer build using -var-file option
+		// Variable file to to pass to our Packer build using -var-file option
 		VarFiles: []string{
 			varFile.Name(),
 		},
@@ -145,9 +144,10 @@ func TestPackerBasicExampleWithVarFile(t *testing.T) {
 	assert.NotContains(t, accountsWithLaunchPermissions, randomAccount)
 	assert.Contains(t, accountsWithLaunchPermissions, requestingAccount)
 
-	// Check if AMI is private
+	// Check if AMI is public
+	MakeAmiPublic(t, amiID, ec2Client)
 	amiIsPublic := terratest_aws.GetAmiPubliclyAccessible(t, awsRegion, amiID)
-	assert.False(t, amiIsPublic)
+	assert.True(t, amiIsPublic)
 }
 
 func TestPackerMultipleConcurrentAmis(t *testing.T) {
@@ -196,18 +196,35 @@ func TestPackerMultipleConcurrentAmis(t *testing.T) {
 	}
 }
 
-func ShareAmi(t *testing.T, amiID string, accountID string, ec2Client *ec2.Client) {
+func ShareAmi(t *testing.T, amiID string, accountID string, ec2Client *ec2.EC2) {
 	input := &ec2.ModifyImageAttributeInput{
 		ImageId: aws.String(amiID),
-		LaunchPermission: &types.LaunchPermissionModifications{
-			Add: []types.LaunchPermission{
+		LaunchPermission: &ec2.LaunchPermissionModifications{
+			Add: []*ec2.LaunchPermission{
 				{
 					UserId: aws.String(accountID),
 				},
 			},
 		},
 	}
-	_, err := ec2Client.ModifyImageAttribute(context.Background(), input)
+	_, err := ec2Client.ModifyImageAttribute(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func MakeAmiPublic(t *testing.T, amiID string, ec2Client *ec2.EC2) {
+	input := &ec2.ModifyImageAttributeInput{
+		ImageId: aws.String(amiID),
+		LaunchPermission: &ec2.LaunchPermissionModifications{
+			Add: []*ec2.LaunchPermission{
+				{
+					Group: aws.String("all"),
+				},
+			},
+		},
+	}
+	_, err := ec2Client.ModifyImageAttribute(input)
 	if err != nil {
 		t.Fatal(err)
 	}

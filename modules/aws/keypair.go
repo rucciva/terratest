@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -59,7 +57,7 @@ func ImportEC2KeyPairE(t testing.TestingT, region string, name string, keyPair *
 		PublicKeyMaterial: []byte(keyPair.PublicKey),
 	}
 
-	_, err = client.ImportKeyPair(context.Background(), params)
+	_, err = client.ImportKeyPair(params)
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +86,6 @@ func DeleteEC2KeyPairE(t testing.TestingT, keyPair *Ec2Keypair) error {
 		KeyName: aws.String(keyPair.Name),
 	}
 
-	_, err = client.DeleteKeyPair(context.Background(), params)
+	_, err = client.DeleteKeyPair(params)
 	return err
 }

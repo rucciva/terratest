@@ -1,7 +1,6 @@
 package gcp
 
 import (
-	"context"
 	"fmt"
 
 	gcrname "github.com/google/go-containerregistry/pkg/name"
@@ -21,7 +20,7 @@ func DeleteGCRRepo(t testing.TestingT, repo string) {
 // DeleteGCRRepoE deletes a GCR repository including all tagged images
 func DeleteGCRRepoE(t testing.TestingT, repo string) error {
 	// create a new auther for the API calls
-	auther, err := gcrgoogle.NewEnvAuthenticator(context.Background())
+	auther, err := gcrgoogle.NewEnvAuthenticator()
 	if err != nil {
 		return fmt.Errorf("Failed to create auther. Got error: %v", err)
 	}
@@ -71,7 +70,7 @@ func DeleteGCRImageRefE(t testing.TestingT, ref string) error {
 	}
 
 	// create a new auther for the API calls
-	auther, err := gcrgoogle.NewEnvAuthenticator(context.Background())
+	auther, err := gcrgoogle.NewEnvAuthenticator()
 	if err != nil {
 		return fmt.Errorf("Failed to create auther. Got error: %v", err)
 	}

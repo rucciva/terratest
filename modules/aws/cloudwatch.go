@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
 
@@ -24,7 +22,7 @@ func GetCloudWatchLogEntriesE(t testing.TestingT, awsRegion string, logStreamNam
 		return nil, err
 	}
 
-	output, err := client.GetLogEvents(context.Background(), &cloudwatchlogs.GetLogEventsInput{
+	output, err := client.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String(logStreamName),
 	})
@@ -33,7 +31,7 @@ func GetCloudWatchLogEntriesE(t testing.TestingT, awsRegion string, logStreamNam
 		return nil, err
 	}
 
-	var entries []string
+	entries := []string{}
 	for _, event := range output.Events {
 		entries = append(entries, *event.Message)
 	}
@@ -42,7 +40,7 @@ func GetCloudWatchLogEntriesE(t testing.TestingT, awsRegion string, logStreamNam
 }
 
 // NewCloudWatchLogsClient creates a new CloudWatch Logs client.
-func NewCloudWatchLogsClient(t testing.TestingT, region string) *cloudwatchlogs.Client {
+func NewCloudWatchLogsClient(t testing.TestingT, region string) *cloudwatchlogs.CloudWatchLogs {
 	client, err := NewCloudWatchLogsClientE(t, region)
 	if err != nil {
 		t.Fatal(err)
@@ -51,10 +49,10 @@ func NewCloudWatchLogsClient(t testing.TestingT, region string) *cloudwatchlogs.
 }
 
 // NewCloudWatchLogsClientE creates a new CloudWatch Logs client.
-func NewCloudWatchLogsClientE(t testing.TestingT, region string) (*cloudwatchlogs.Client, error) {
+func NewCloudWatchLogsClientE(t testing.TestingT, region string) (*cloudwatchlogs.CloudWatchLogs, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
-	return cloudwatchlogs.NewFromConfig(*sess), nil
+	return cloudwatchlogs.New(sess), nil
 }

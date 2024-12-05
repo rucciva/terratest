@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	awsSDK "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	awsSDK "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -22,11 +22,11 @@ func TestTerraformAwsDynamoDBExample(t *testing.T) {
 	// Set up expected values to be checked later
 	expectedTableName := fmt.Sprintf("terratest-aws-dynamodb-example-table-%s", random.UniqueId())
 	expectedKmsKeyArn := aws.GetCmkArn(t, awsRegion, "alias/aws/dynamodb")
-	expectedKeySchema := []types.KeySchemaElement{
-		{AttributeName: awsSDK.String("userId"), KeyType: types.KeyTypeHash},
-		{AttributeName: awsSDK.String("department"), KeyType: types.KeyTypeRange},
+	expectedKeySchema := []*dynamodb.KeySchemaElement{
+		{AttributeName: awsSDK.String("userId"), KeyType: awsSDK.String("HASH")},
+		{AttributeName: awsSDK.String("department"), KeyType: awsSDK.String("RANGE")},
 	}
-	expectedTags := []types.Tag{
+	expectedTags := []*dynamodb.Tag{
 		{Key: awsSDK.String("Environment"), Value: awsSDK.String("production")},
 	}
 
@@ -52,18 +52,18 @@ func TestTerraformAwsDynamoDBExample(t *testing.T) {
 	// Look up the DynamoDB table by name
 	table := aws.GetDynamoDBTable(t, awsRegion, expectedTableName)
 
-	assert.Equal(t, "ACTIVE", string(table.TableStatus))
+	assert.Equal(t, "ACTIVE", awsSDK.StringValue(table.TableStatus))
 	assert.ElementsMatch(t, expectedKeySchema, table.KeySchema)
 
 	// Verify server-side encryption configuration
-	assert.Equal(t, expectedKmsKeyArn, awsSDK.ToString(table.SSEDescription.KMSMasterKeyArn))
-	assert.Equal(t, "ENABLED", string(table.SSEDescription.Status))
-	assert.Equal(t, "KMS", string(table.SSEDescription.SSEType))
+	assert.Equal(t, expectedKmsKeyArn, awsSDK.StringValue(table.SSEDescription.KMSMasterKeyArn))
+	assert.Equal(t, "ENABLED", awsSDK.StringValue(table.SSEDescription.Status))
+	assert.Equal(t, "KMS", awsSDK.StringValue(table.SSEDescription.SSEType))
 
 	// Verify TTL configuration
 	ttl := aws.GetDynamoDBTableTimeToLive(t, awsRegion, expectedTableName)
-	assert.Equal(t, "expires", awsSDK.ToString(ttl.AttributeName))
-	assert.Equal(t, "ENABLED", string(ttl.TimeToLiveStatus))
+	assert.Equal(t, "expires", awsSDK.StringValue(ttl.AttributeName))
+	assert.Equal(t, "ENABLED", awsSDK.StringValue(ttl.TimeToLiveStatus))
 
 	// Verify resource tags
 	tags := aws.GetDynamoDbTableTags(t, awsRegion, expectedTableName)

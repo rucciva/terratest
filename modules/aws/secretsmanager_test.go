@@ -14,19 +14,13 @@ func TestSecretsManagerMethods(t *testing.T) {
 	region := GetRandomStableRegion(t, nil, nil)
 	name := random.UniqueId()
 	description := "This is just a secrets manager test description."
-	secretOriginalValue := "This is the secret value."
-	secretUpdatedValue := "This is the NEW secret value."
+	secretValue := "This is the secret value."
 
-	secretARN := CreateSecretStringWithDefaultKey(t, region, description, name, secretOriginalValue)
+	secretARN := CreateSecretStringWithDefaultKey(t, region, description, name, secretValue)
 	defer deleteSecret(t, region, secretARN)
 
 	storedValue := GetSecretValue(t, region, secretARN)
-	assert.Equal(t, secretOriginalValue, storedValue)
-
-	PutSecretString(t, region, secretARN, secretUpdatedValue)
-
-	storedValueAfterUpdate := GetSecretValue(t, region, secretARN)
-	assert.Equal(t, secretUpdatedValue, storedValueAfterUpdate)
+	assert.Equal(t, secretValue, storedValue)
 }
 
 func deleteSecret(t *testing.T, region, id string) {

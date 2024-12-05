@@ -18,11 +18,7 @@ func TestPackerHelloWorldExample(t *testing.T) {
 	packer.BuildArtifact(t, packerOptions)
 
 	// website::tag::3:: Run the Docker image, read the text file from it, and make sure it contains the expected output.
-	opts := &docker.RunOptions{
-		Command:  []string{"cat", "/test.txt"},
-		Platform: "linux/amd64",
-	}
-
+	opts := &docker.RunOptions{Command: []string{"cat", "/test.txt"}}
 	output := docker.Run(t, "gruntwork/packer-hello-world-example", opts)
 	assert.Equal(t, "Hello, World!", output)
 }

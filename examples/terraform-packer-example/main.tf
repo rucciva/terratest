@@ -24,14 +24,9 @@ provider "aws" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 resource "aws_instance" "example" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-
-  user_data = templatefile("${path.module}/user-data/user-data.sh", {
-    instance_text = var.instance_text
-    instance_port = var.instance_port
-  })
-
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  user_data              = data.template_file.user_data.rendered
   vpc_security_group_ids = [aws_security_group.example.id]
 
   tags = {
@@ -56,3 +51,17 @@ resource "aws_security_group" "example" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# CREATE THE USER DATA SCRIPT THAT WILL RUN DURING BOOT ON THE EC2 INSTANCE
+# ---------------------------------------------------------------------------------------------------------------------
+
+data "template_file" "user_data" {
+  template = file("${path.module}/user-data/user-data.sh")
+
+  vars = {
+    instance_text = var.instance_text
+    instance_port = var.instance_port
+  }
+}
+

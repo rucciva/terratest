@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
+
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,7 +56,7 @@ func TestGetRecommendedInstanceType(t *testing.T) {
 		t.Run(fmt.Sprintf("%s-%s", testCase.region, strings.Join(testCase.instanceTypeOptions, "-")), func(t *testing.T) {
 			t.Parallel()
 			instanceType := GetRecommendedInstanceType(t, testCase.region, testCase.instanceTypeOptions)
-			// We could hard-code the expected result (e.g., as of July 2020, we expect eu-west-1 to return t2.micro
+			// We could hard-code the expected result (e.g., as of July, 2020, we expect eu-west-1 to return t2.micro
 			// and ap-northeast-2 to return t3.micro), but the result will likely change over time, so to avoid a
 			// brittle test, we simply check that we get _one_ result. Combined with the unit test below, this hopefully
 			// is enough to be confident this function works correctly.
@@ -68,7 +69,7 @@ func TestPickRecommendedInstanceTypeHappyPath(t *testing.T) {
 	testCases := []struct {
 		name                  string
 		availabilityZones     []string
-		instanceTypeOfferings []types.InstanceTypeOffering
+		instanceTypeOfferings []*ec2.InstanceTypeOffering
 		instanceTypeOptions   []string
 		expected              string
 	}{
@@ -135,7 +136,7 @@ func TestPickRecommendedInstanceTypeErrors(t *testing.T) {
 	testCases := []struct {
 		name                  string
 		availabilityZones     []string
-		instanceTypeOfferings []types.InstanceTypeOffering
+		instanceTypeOfferings []*ec2.InstanceTypeOffering
 		instanceTypeOptions   []string
 	}{
 		{
@@ -183,15 +184,15 @@ func TestPickRecommendedInstanceTypeErrors(t *testing.T) {
 	}
 }
 
-func offerings(offerings map[string][]string) []types.InstanceTypeOffering {
-	var out []types.InstanceTypeOffering
+func offerings(offerings map[string][]string) []*ec2.InstanceTypeOffering {
+	var out []*ec2.InstanceTypeOffering
 
 	for az, instanceTypes := range offerings {
 		for _, instanceType := range instanceTypes {
-			offering := types.InstanceTypeOffering{
-				InstanceType: types.InstanceType(instanceType),
+			offering := &ec2.InstanceTypeOffering{
+				InstanceType: aws.String(instanceType),
 				Location:     aws.String(az),
-				LocationType: types.LocationTypeAvailabilityZone,
+				LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
 			}
 			out = append(out, offering)
 		}

@@ -1,12 +1,10 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/stretchr/testify/require"
@@ -46,17 +44,17 @@ func GetPrivateIpsOfEc2Instances(t testing.TestingT, instanceIDs []string, awsRe
 func GetPrivateIpsOfEc2InstancesE(t testing.TestingT, instanceIDs []string, awsRegion string) (map[string]string, error) {
 	ec2Client := NewEc2Client(t, awsRegion)
 	// TODO: implement pagination for cases that extend beyond limit (1000 instances)
-	input := ec2.DescribeInstancesInput{InstanceIds: instanceIDs}
-	output, err := ec2Client.DescribeInstances(context.Background(), &input)
+	input := ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice(instanceIDs)}
+	output, err := ec2Client.DescribeInstances(&input)
 	if err != nil {
 		return nil, err
 	}
 
 	ips := map[string]string{}
 
-	for _, reservation := range output.Reservations {
-		for _, instance := range reservation.Instances {
-			ips[aws.ToString(instance.InstanceId)] = aws.ToString(instance.PrivateIpAddress)
+	for _, reserveration := range output.Reservations {
+		for _, instance := range reserveration.Instances {
+			ips[aws.StringValue(instance.InstanceId)] = aws.StringValue(instance.PrivateIpAddress)
 		}
 	}
 
@@ -100,17 +98,17 @@ func GetPrivateHostnamesOfEc2InstancesE(t testing.TestingT, instanceIDs []string
 		return nil, err
 	}
 	// TODO: implement pagination for cases that extend beyond limit (1000 instances)
-	input := ec2.DescribeInstancesInput{InstanceIds: instanceIDs}
-	output, err := ec2Client.DescribeInstances(context.Background(), &input)
+	input := ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice(instanceIDs)}
+	output, err := ec2Client.DescribeInstances(&input)
 	if err != nil {
 		return nil, err
 	}
 
 	hostnames := map[string]string{}
 
-	for _, reservation := range output.Reservations {
-		for _, instance := range reservation.Instances {
-			hostnames[aws.ToString(instance.InstanceId)] = aws.ToString(instance.PrivateDnsName)
+	for _, reserveration := range output.Reservations {
+		for _, instance := range reserveration.Instances {
+			hostnames[aws.StringValue(instance.InstanceId)] = aws.StringValue(instance.PrivateDnsName)
 		}
 	}
 
@@ -151,17 +149,17 @@ func GetPublicIpsOfEc2Instances(t testing.TestingT, instanceIDs []string, awsReg
 func GetPublicIpsOfEc2InstancesE(t testing.TestingT, instanceIDs []string, awsRegion string) (map[string]string, error) {
 	ec2Client := NewEc2Client(t, awsRegion)
 	// TODO: implement pagination for cases that extend beyond limit (1000 instances)
-	input := ec2.DescribeInstancesInput{InstanceIds: instanceIDs}
-	output, err := ec2Client.DescribeInstances(context.Background(), &input)
+	input := ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice(instanceIDs)}
+	output, err := ec2Client.DescribeInstances(&input)
 	if err != nil {
 		return nil, err
 	}
 
 	ips := map[string]string{}
 
-	for _, reservation := range output.Reservations {
-		for _, instance := range reservation.Instances {
-			ips[aws.ToString(instance.InstanceId)] = aws.ToString(instance.PublicIpAddress)
+	for _, reserveration := range output.Reservations {
+		for _, instance := range reserveration.Instances {
+			ips[aws.StringValue(instance.InstanceId)] = aws.StringValue(instance.PublicIpAddress)
 		}
 	}
 
@@ -191,7 +189,7 @@ func GetEc2InstanceIdsByFilters(t testing.TestingT, region string, ec2Filters ma
 	return out
 }
 
-// GetEc2InstanceIdsByFiltersE returns all the IDs of EC2 instances in the given region which match to EC2 filter list
+// GetEc2InstanceIdsByFilters returns all the IDs of EC2 instances in the given region which match to EC2 filter list
 // as per https://docs.aws.amazon.com/sdk-for-go/api/service/ec2/#DescribeInstancesInput.
 func GetEc2InstanceIdsByFiltersE(t testing.TestingT, region string, ec2Filters map[string][]string) ([]string, error) {
 	client, err := NewEc2ClientE(t, region)
@@ -199,19 +197,19 @@ func GetEc2InstanceIdsByFiltersE(t testing.TestingT, region string, ec2Filters m
 		return nil, err
 	}
 
-	var ec2FilterList []types.Filter
+	ec2FilterList := []*ec2.Filter{}
 
 	for name, values := range ec2Filters {
-		ec2FilterList = append(ec2FilterList, types.Filter{Name: aws.String(name), Values: values})
+		ec2FilterList = append(ec2FilterList, &ec2.Filter{Name: aws.String(name), Values: aws.StringSlice(values)})
 	}
 
 	// TODO: implement pagination for cases that extend beyond limit (1000 instances)
-	output, err := client.DescribeInstances(context.Background(), &ec2.DescribeInstancesInput{Filters: ec2FilterList})
+	output, err := client.DescribeInstances(&ec2.DescribeInstancesInput{Filters: ec2FilterList})
 	if err != nil {
 		return nil, err
 	}
 
-	var instanceIDs []string
+	instanceIDs := []string{}
 
 	for _, reservation := range output.Reservations {
 		for _, instance := range reservation.Instances {
@@ -237,19 +235,19 @@ func GetTagsForEc2InstanceE(t testing.TestingT, region string, instanceID string
 	}
 
 	input := ec2.DescribeTagsInput{
-		Filters: []types.Filter{
+		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("resource-type"),
-				Values: []string{"instance"},
+				Values: aws.StringSlice([]string{"instance"}),
 			},
 			{
 				Name:   aws.String("resource-id"),
-				Values: []string{instanceID},
+				Values: aws.StringSlice([]string{instanceID}),
 			},
 		},
 	}
 
-	out, err := client.DescribeTags(context.Background(), &input)
+	out, err := client.DescribeTags(&input)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +255,7 @@ func GetTagsForEc2InstanceE(t testing.TestingT, region string, instanceID string
 	tags := map[string]string{}
 
 	for _, tag := range out.Tags {
-		tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
+		tags[aws.StringValue(tag.Key)] = aws.StringValue(tag.Value)
 	}
 
 	return tags, nil
@@ -277,7 +275,7 @@ func DeleteAmiE(t testing.TestingT, region string, imageID string) error {
 		return err
 	}
 
-	_, err = client.DeregisterImage(context.Background(), &ec2.DeregisterImageInput{ImageId: aws.String(imageID)})
+	_, err = client.DeregisterImage(&ec2.DeregisterImageInput{ImageId: aws.String(imageID)})
 	return err
 }
 
@@ -293,16 +291,16 @@ func AddTagsToResourceE(t testing.TestingT, region string, resource string, tags
 		return err
 	}
 
-	var awsTags []types.Tag
+	var awsTags []*ec2.Tag
 	for key, value := range tags {
-		awsTags = append(awsTags, types.Tag{
+		awsTags = append(awsTags, &ec2.Tag{
 			Key:   aws.String(key),
 			Value: aws.String(value),
 		})
 	}
 
-	_, err = client.CreateTags(context.Background(), &ec2.CreateTagsInput{
-		Resources: []string{resource},
+	_, err = client.CreateTags(&ec2.CreateTagsInput{
+		Resources: []*string{aws.String(resource)},
 		Tags:      awsTags,
 	})
 
@@ -323,9 +321,9 @@ func TerminateInstanceE(t testing.TestingT, region string, instanceID string) er
 		return err
 	}
 
-	_, err = client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
-		InstanceIds: []string{
-			instanceID,
+	_, err = client.TerminateInstances(&ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceID),
 		},
 	})
 
@@ -346,7 +344,7 @@ func GetAmiPubliclyAccessibleE(t testing.TestingT, awsRegion string, amiID strin
 		return false, err
 	}
 	for _, launchPermission := range launchPermissions {
-		if string(launchPermission.Group) == "all" {
+		if aws.StringValue(launchPermission.Group) == "all" {
 			return true, nil
 		}
 	}
@@ -362,30 +360,30 @@ func GetAccountsWithLaunchPermissionsForAmi(t testing.TestingT, awsRegion string
 
 // GetAccountsWithLaunchPermissionsForAmiE returns list of accounts that the AMI is shared with
 func GetAccountsWithLaunchPermissionsForAmiE(t testing.TestingT, awsRegion string, amiID string) ([]string, error) {
-	var accountIDs []string
+	accountIDs := []string{}
 	launchPermissions, err := GetLaunchPermissionsForAmiE(t, awsRegion, amiID)
 	if err != nil {
 		return accountIDs, err
 	}
 	for _, launchPermission := range launchPermissions {
-		if aws.ToString(launchPermission.UserId) != "" {
-			accountIDs = append(accountIDs, aws.ToString(launchPermission.UserId))
+		if aws.StringValue(launchPermission.UserId) != "" {
+			accountIDs = append(accountIDs, aws.StringValue(launchPermission.UserId))
 		}
 	}
 	return accountIDs, nil
 }
 
 // GetLaunchPermissionsForAmiE returns launchPermissions as configured in AWS
-func GetLaunchPermissionsForAmiE(t testing.TestingT, awsRegion string, amiID string) ([]types.LaunchPermission, error) {
+func GetLaunchPermissionsForAmiE(t testing.TestingT, awsRegion string, amiID string) ([]*ec2.LaunchPermission, error) {
 	client := NewEc2Client(t, awsRegion)
 	input := &ec2.DescribeImageAttributeInput{
-		Attribute: types.ImageAttributeNameLaunchPermission,
+		Attribute: aws.String("launchPermission"),
 		ImageId:   aws.String(amiID),
 	}
 
-	output, err := client.DescribeImageAttribute(context.Background(), input)
+	output, err := client.DescribeImageAttribute(input)
 	if err != nil {
-		return []types.LaunchPermission{}, err
+		return []*ec2.LaunchPermission{}, err
 	}
 	return output.LaunchPermissions, nil
 }
@@ -424,7 +422,7 @@ func GetRecommendedInstanceTypeE(t testing.TestingT, region string, instanceType
 // AZs. If you have code that needs to run on a "small" instance across all AZs in many different regions, you can
 // use this function to automatically figure out which instance type you should use.
 // This function expects an authenticated EC2 client from the AWS SDK Go library.
-func GetRecommendedInstanceTypeWithClientE(t testing.TestingT, ec2Client *ec2.Client, instanceTypeOptions []string) (string, error) {
+func GetRecommendedInstanceTypeWithClientE(t testing.TestingT, ec2Client *ec2.EC2, instanceTypeOptions []string) (string, error) {
 	availabilityZones, err := getAllAvailabilityZonesE(ec2Client)
 	if err != nil {
 		return "", err
@@ -441,7 +439,7 @@ func GetRecommendedInstanceTypeWithClientE(t testing.TestingT, ec2Client *ec2.Cl
 // pickRecommendedInstanceTypeE returns the first instance type from instanceTypeOptions that is available in all the
 // AZs in availabilityZones based on the availability data in instanceTypeOfferings. If none of the instance types are
 // available in all AZs, this function returns an error.
-func pickRecommendedInstanceTypeE(availabilityZones []string, instanceTypeOfferings []types.InstanceTypeOffering, instanceTypeOptions []string) (string, error) {
+func pickRecommendedInstanceTypeE(availabilityZones []string, instanceTypeOfferings []*ec2.InstanceTypeOffering, instanceTypeOptions []string) (string, error) {
 	// O(n^3) for the win!
 	for _, instanceType := range instanceTypeOptions {
 		if instanceTypeExistsInAllAzs(instanceType, availabilityZones, instanceTypeOfferings) {
@@ -452,9 +450,9 @@ func pickRecommendedInstanceTypeE(availabilityZones []string, instanceTypeOfferi
 	return "", NoInstanceTypeError{InstanceTypeOptions: instanceTypeOptions, Azs: availabilityZones}
 }
 
-// instanceTypeExistsInAllAzs returns true if the given instance type exists in all the given availabilityZones based
+// instanceTypeExistsInAllAzs returns true if the given inistance type exists in all the given availabilityZones based
 // on the availability data in instanceTypeOfferings
-func instanceTypeExistsInAllAzs(instanceType string, availabilityZones []string, instanceTypeOfferings []types.InstanceTypeOffering) bool {
+func instanceTypeExistsInAllAzs(instanceType string, availabilityZones []string, instanceTypeOfferings []*ec2.InstanceTypeOffering) bool {
 	if len(availabilityZones) == 0 || len(instanceTypeOfferings) == 0 {
 		return false
 	}
@@ -470,9 +468,9 @@ func instanceTypeExistsInAllAzs(instanceType string, availabilityZones []string,
 
 // hasOffering returns true if the given availability zone and instance type are one of the offerings in
 // instanceTypeOfferings
-func hasOffering(instanceTypeOfferings []types.InstanceTypeOffering, availabilityZone string, instanceType string) bool {
+func hasOffering(instanceTypeOfferings []*ec2.InstanceTypeOffering, availabilityZone string, instanceType string) bool {
 	for _, offering := range instanceTypeOfferings {
-		if string(offering.InstanceType) == instanceType && aws.ToString(offering.Location) == availabilityZone {
+		if aws.StringValue(offering.InstanceType) == instanceType && aws.StringValue(offering.Location) == availabilityZone {
 			return true
 		}
 	}
@@ -482,18 +480,18 @@ func hasOffering(instanceTypeOfferings []types.InstanceTypeOffering, availabilit
 
 // getInstanceTypeOfferingsE returns the instance types from the given list that are available in the region configured
 // in the given EC2 client
-func getInstanceTypeOfferingsE(client *ec2.Client, instanceTypeOptions []string) ([]types.InstanceTypeOffering, error) {
+func getInstanceTypeOfferingsE(client *ec2.EC2, instanceTypeOptions []string) ([]*ec2.InstanceTypeOffering, error) {
 	input := ec2.DescribeInstanceTypeOfferingsInput{
-		LocationType: types.LocationTypeAvailabilityZone,
-		Filters: []types.Filter{
+		LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
+		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("instance-type"),
-				Values: instanceTypeOptions,
+				Values: aws.StringSlice(instanceTypeOptions),
 			},
 		},
 	}
 
-	out, err := client.DescribeInstanceTypeOfferings(context.Background(), &input)
+	out, err := client.DescribeInstanceTypeOfferings(&input)
 	if err != nil {
 		return nil, err
 	}
@@ -502,17 +500,17 @@ func getInstanceTypeOfferingsE(client *ec2.Client, instanceTypeOptions []string)
 }
 
 // getAllAvailabilityZonesE returns all the available AZs in the region configured in the given EC2 client
-func getAllAvailabilityZonesE(client *ec2.Client) ([]string, error) {
+func getAllAvailabilityZonesE(client *ec2.EC2) ([]string, error) {
 	input := ec2.DescribeAvailabilityZonesInput{
-		Filters: []types.Filter{
+		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("state"),
-				Values: []string{"available"},
+				Values: aws.StringSlice([]string{"available"}),
 			},
 		},
 	}
 
-	out, err := client.DescribeAvailabilityZones(context.Background(), &input)
+	out, err := client.DescribeAvailabilityZones(&input)
 	if err != nil {
 		return nil, err
 	}
@@ -520,25 +518,25 @@ func getAllAvailabilityZonesE(client *ec2.Client) ([]string, error) {
 	var azs []string
 
 	for _, az := range out.AvailabilityZones {
-		azs = append(azs, aws.ToString(az.ZoneName))
+		azs = append(azs, aws.StringValue(az.ZoneName))
 	}
 
 	return azs, nil
 }
 
 // NewEc2Client creates an EC2 client.
-func NewEc2Client(t testing.TestingT, region string) *ec2.Client {
+func NewEc2Client(t testing.TestingT, region string) *ec2.EC2 {
 	client, err := NewEc2ClientE(t, region)
 	require.NoError(t, err)
 	return client
 }
 
 // NewEc2ClientE creates an EC2 client.
-func NewEc2ClientE(t testing.TestingT, region string) (*ec2.Client, error) {
+func NewEc2ClientE(t testing.TestingT, region string) (*ec2.EC2, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
 
-	return ec2.NewFromConfig(*sess), nil
+	return ec2.New(sess), nil
 }

@@ -1,14 +1,12 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -59,7 +57,7 @@ func GetEbsSnapshotsForAmi(t testing.TestingT, region string, ami string) []stri
 	return snapshots
 }
 
-// GetEbsSnapshotsForAmiE retrieves the EBS snapshots which back the given AMI
+// GetEbsSnapshotsForAmi retrieves the EBS snapshots which back the given AMI
 func GetEbsSnapshotsForAmiE(t testing.TestingT, region string, ami string) ([]string, error) {
 	logger.Default.Logf(t, "Retrieving EBS snapshots backing AMI %s", ami)
 	ec2Client, err := NewEc2ClientE(t, region)
@@ -67,9 +65,9 @@ func GetEbsSnapshotsForAmiE(t testing.TestingT, region string, ami string) ([]st
 		return nil, err
 	}
 
-	images, err := ec2Client.DescribeImages(context.Background(), &ec2.DescribeImagesInput{
-		ImageIds: []string{
-			ami,
+	images, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
+		ImageIds: []*string{
+			aws.String(ami),
 		},
 	})
 	if err != nil {
@@ -80,7 +78,7 @@ func GetEbsSnapshotsForAmiE(t testing.TestingT, region string, ami string) ([]st
 	for _, image := range images.Images {
 		for _, mapping := range image.BlockDeviceMappings {
 			if mapping.Ebs != nil && mapping.Ebs.SnapshotId != nil {
-				snapshots = append(snapshots, aws.ToString(mapping.Ebs.SnapshotId))
+				snapshots = append(snapshots, aws.StringValue(mapping.Ebs.SnapshotId))
 			}
 		}
 	}
@@ -108,18 +106,18 @@ func GetMostRecentAmiIdE(t testing.TestingT, region string, ownerId string, filt
 		return "", err
 	}
 
-	var ec2Filters []types.Filter
+	ec2Filters := []*ec2.Filter{}
 	for name, values := range filters {
-		ec2Filters = append(ec2Filters, types.Filter{Name: aws.String(name), Values: values})
+		ec2Filters = append(ec2Filters, &ec2.Filter{Name: aws.String(name), Values: aws.StringSlice(values)})
 	}
 
 	input := ec2.DescribeImagesInput{
 		Filters:           ec2Filters,
 		IncludeDeprecated: aws.Bool(true),
-		Owners:            []string{ownerId},
+		Owners:            []*string{aws.String(ownerId)},
 	}
 
-	out, err := ec2Client.DescribeImages(context.Background(), &input)
+	out, err := ec2Client.DescribeImages(&input)
 	if err != nil {
 		return "", err
 	}
@@ -129,11 +127,11 @@ func GetMostRecentAmiIdE(t testing.TestingT, region string, ownerId string, filt
 	}
 
 	mostRecentImage := mostRecentAMI(out.Images)
-	return aws.ToString(mostRecentImage.ImageId), nil
+	return aws.StringValue(mostRecentImage.ImageId), nil
 }
 
 // Image sorting code borrowed from: https://github.com/hashicorp/packer/blob/7f4112ba229309cfc0ebaa10ded2abdfaf1b22c8/builder/amazon/common/step_source_ami_info.go
-type imageSort []types.Image
+type imageSort []*ec2.Image
 
 func (a imageSort) Len() int      { return len(a) }
 func (a imageSort) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -144,7 +142,7 @@ func (a imageSort) Less(i, j int) bool {
 }
 
 // mostRecentAMI returns the most recent AMI out of a slice of images.
-func mostRecentAMI(images []types.Image) types.Image {
+func mostRecentAMI(images []*ec2.Image) *ec2.Image {
 	sortedImages := images
 	sort.Sort(imageSort(sortedImages))
 	return sortedImages[len(sortedImages)-1]

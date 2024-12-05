@@ -28,9 +28,6 @@ type RunOptions struct {
 	// Assign a name to the container
 	Name string
 
-	// Set platform
-	Platform string
-
 	// If set to true, pass the --privileged flag to 'docker run' to give extended privileges to the container
 	Privileged bool
 
@@ -130,10 +127,6 @@ func formatDockerRunArgs(image string, options *RunOptions) ([]string, error) {
 
 	if options.Name != "" {
 		args = append(args, "--name", options.Name)
-	}
-
-	if options.Platform != "" {
-		args = append(args, "--platform", options.Platform)
 	}
 
 	if options.Privileged {

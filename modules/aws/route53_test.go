@@ -1,14 +1,13 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/route53"
-	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,35 +19,35 @@ func TestRoute53Record(t *testing.T) {
 	require.NoError(t, err)
 
 	domain := fmt.Sprintf("terratest%dexample.com", time.Now().UnixNano())
-	hostedZone, err := c.CreateHostedZone(context.Background(), &route53.CreateHostedZoneInput{
+	hostedZone, err := c.CreateHostedZone(&route53.CreateHostedZoneInput{
 		Name:            aws.String(domain),
 		CallerReference: aws.String(fmt.Sprint(time.Now().UnixNano())),
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := c.DeleteHostedZone(context.Background(), &route53.DeleteHostedZoneInput{
+		_, err := c.DeleteHostedZone(&route53.DeleteHostedZoneInput{
 			Id: hostedZone.HostedZone.Id,
 		})
 		require.NoError(t, err)
 	})
 
 	recordName := fmt.Sprintf("record.%s", domain)
-	resourceRecordSet := &types.ResourceRecordSet{
+	resourceRecordSet := &route53.ResourceRecordSet{
 		Name: &recordName,
-		Type: types.RRTypeA,
+		Type: aws.String("A"),
 		TTL:  aws.Int64(60),
-		ResourceRecords: []types.ResourceRecord{
+		ResourceRecords: []*route53.ResourceRecord{
 			{
 				Value: aws.String("127.0.0.1"),
 			},
 		},
 	}
-	_, err = c.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+	_, err = c.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
 		HostedZoneId: hostedZone.HostedZone.Id,
-		ChangeBatch: &types.ChangeBatch{
-			Changes: []types.Change{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
 				{
-					Action:            types.ChangeActionCreate,
+					Action:            proto.String("CREATE"),
 					ResourceRecordSet: resourceRecordSet,
 				},
 			},
@@ -56,12 +55,12 @@ func TestRoute53Record(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := c.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+		_, err := c.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: hostedZone.HostedZone.Id,
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: []*route53.Change{
 					{
-						Action:            types.ChangeActionDelete,
+						Action:            proto.String("DELETE"),
 						ResourceRecordSet: resourceRecordSet,
 					},
 				},
@@ -71,10 +70,10 @@ func TestRoute53Record(t *testing.T) {
 	})
 
 	t.Run("ExistingRecord", func(t *testing.T) {
-		route53Record := GetRoute53Record(t, *hostedZone.HostedZone.Id, recordName, string(resourceRecordSet.Type), region)
+		route53Record := GetRoute53Record(t, *hostedZone.HostedZone.Id, recordName, *resourceRecordSet.Type, region)
 		require.NotNil(t, route53Record)
 		assert.Equal(t, recordName+".", *route53Record.Name)
-		assert.Equal(t, resourceRecordSet.Type, route53Record.Type)
+		assert.Equal(t, *resourceRecordSet.Type, *route53Record.Type)
 		assert.Equal(t, "127.0.0.1", *route53Record.ResourceRecords[0].Value)
 	})
 

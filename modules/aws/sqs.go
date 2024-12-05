@@ -1,14 +1,12 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -39,7 +37,7 @@ func CreateRandomQueueE(t testing.TestingT, awsRegion string, prefix string) (st
 
 	channelName := fmt.Sprintf("%s-%s", prefix, channel.String())
 
-	queue, err := sqsClient.CreateQueue(context.Background(), &sqs.CreateQueueInput{
+	queue, err := sqsClient.CreateQueue(&sqs.CreateQueueInput{
 		QueueName: aws.String(channelName),
 	})
 
@@ -47,7 +45,7 @@ func CreateRandomQueueE(t testing.TestingT, awsRegion string, prefix string) (st
 		return "", err
 	}
 
-	return aws.ToString(queue.QueueUrl), nil
+	return aws.StringValue(queue.QueueUrl), nil
 }
 
 // CreateRandomFifoQueue creates a new FIFO SQS queue with a random name that starts with the given prefix and return the queue URL.
@@ -75,11 +73,11 @@ func CreateRandomFifoQueueE(t testing.TestingT, awsRegion string, prefix string)
 
 	channelName := fmt.Sprintf("%s-%s.fifo", prefix, channel.String())
 
-	queue, err := sqsClient.CreateQueue(context.Background(), &sqs.CreateQueueInput{
+	queue, err := sqsClient.CreateQueue(&sqs.CreateQueueInput{
 		QueueName: aws.String(channelName),
-		Attributes: map[string]string{
-			"ContentBasedDeduplication": "true",
-			"FifoQueue":                 "true",
+		Attributes: map[string]*string{
+			"ContentBasedDeduplication": aws.String("true"),
+			"FifoQueue":                 aws.String("true"),
 		},
 	})
 
@@ -87,7 +85,7 @@ func CreateRandomFifoQueueE(t testing.TestingT, awsRegion string, prefix string)
 		return "", err
 	}
 
-	return aws.ToString(queue.QueueUrl), nil
+	return aws.StringValue(queue.QueueUrl), nil
 }
 
 // DeleteQueue deletes the SQS queue with the given URL.
@@ -107,7 +105,7 @@ func DeleteQueueE(t testing.TestingT, awsRegion string, queueURL string) error {
 		return err
 	}
 
-	_, err = sqsClient.DeleteQueue(context.Background(), &sqs.DeleteQueueInput{
+	_, err = sqsClient.DeleteQueue(&sqs.DeleteQueueInput{
 		QueueUrl: aws.String(queueURL),
 	})
 
@@ -131,7 +129,7 @@ func DeleteMessageFromQueueE(t testing.TestingT, awsRegion string, queueURL stri
 		return err
 	}
 
-	_, err = sqsClient.DeleteMessage(context.Background(), &sqs.DeleteMessageInput{
+	_, err = sqsClient.DeleteMessage(&sqs.DeleteMessageInput{
 		ReceiptHandle: &receipt,
 		QueueUrl:      &queueURL,
 	})
@@ -156,7 +154,7 @@ func SendMessageToQueueE(t testing.TestingT, awsRegion string, queueURL string, 
 		return err
 	}
 
-	res, err := sqsClient.SendMessage(context.Background(), &sqs.SendMessageInput{
+	res, err := sqsClient.SendMessage(&sqs.SendMessageInput{
 		MessageBody: &message,
 		QueueUrl:    &queueURL,
 	})
@@ -169,12 +167,12 @@ func SendMessageToQueueE(t testing.TestingT, awsRegion string, queueURL string, 
 		return err
 	}
 
-	logger.Default.Logf(t, "Message id %s sent to queue %s", aws.ToString(res.MessageId), queueURL)
+	logger.Default.Logf(t, "Message id %s sent to queue %s", aws.StringValue(res.MessageId), queueURL)
 
 	return nil
 }
 
-// SendMessageFifoToQueue sends the given message to the FIFO SQS queue with the given URL.
+// SendMessageToFifoQueue sends the given message to the FIFO SQS queue with the given URL.
 func SendMessageFifoToQueue(t testing.TestingT, awsRegion string, queueURL string, message string, messageGroupID string) {
 	err := SendMessageToFifoQueueE(t, awsRegion, queueURL, message, messageGroupID)
 	if err != nil {
@@ -191,7 +189,7 @@ func SendMessageToFifoQueueE(t testing.TestingT, awsRegion string, queueURL stri
 		return err
 	}
 
-	res, err := sqsClient.SendMessage(context.Background(), &sqs.SendMessageInput{
+	res, err := sqsClient.SendMessage(&sqs.SendMessageInput{
 		MessageBody:    &message,
 		QueueUrl:       &queueURL,
 		MessageGroupId: &messageGroupID,
@@ -205,7 +203,7 @@ func SendMessageToFifoQueueE(t testing.TestingT, awsRegion string, queueURL stri
 		return err
 	}
 
-	logger.Default.Logf(t, "Message id %s sent to queue %s", aws.ToString(res.MessageId), queueURL)
+	logger.Default.Logf(t, "Message id %s sent to queue %s", aws.StringValue(res.MessageId), queueURL)
 
 	return nil
 }
@@ -234,12 +232,12 @@ func WaitForQueueMessage(t testing.TestingT, awsRegion string, queueURL string, 
 
 	for i := 0; i < cycles; i++ {
 		logger.Default.Logf(t, "Waiting for message on %s (%ss)", queueURL, strconv.Itoa(i*cycleLength))
-		result, err := sqsClient.ReceiveMessage(context.Background(), &sqs.ReceiveMessageInput{
-			QueueUrl:                    aws.String(queueURL),
-			MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameSentTimestamp},
-			MaxNumberOfMessages:         int32(1),
-			MessageAttributeNames:       []string{"All"},
-			WaitTimeSeconds:             int32(cycleLength),
+		result, err := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+			QueueUrl:              aws.String(queueURL),
+			AttributeNames:        aws.StringSlice([]string{"SentTimestamp"}),
+			MaxNumberOfMessages:   aws.Int64(1),
+			MessageAttributeNames: aws.StringSlice([]string{"All"}),
+			WaitTimeSeconds:       aws.Int64(int64(cycleLength)),
 		})
 
 		if err != nil {
@@ -256,7 +254,7 @@ func WaitForQueueMessage(t testing.TestingT, awsRegion string, queueURL string, 
 }
 
 // NewSqsClient creates a new SQS client.
-func NewSqsClient(t testing.TestingT, region string) *sqs.Client {
+func NewSqsClient(t testing.TestingT, region string) *sqs.SQS {
 	client, err := NewSqsClientE(t, region)
 	if err != nil {
 		t.Fatal(err)
@@ -265,13 +263,13 @@ func NewSqsClient(t testing.TestingT, region string) *sqs.Client {
 }
 
 // NewSqsClientE creates a new SQS client.
-func NewSqsClientE(t testing.TestingT, region string) (*sqs.Client, error) {
+func NewSqsClientE(t testing.TestingT, region string) (*sqs.SQS, error) {
 	sess, err := NewAuthenticatedSession(region)
 	if err != nil {
 		return nil, err
 	}
 
-	return sqs.NewFromConfig(*sess), nil
+	return sqs.New(sess), nil
 }
 
 // ReceiveMessageTimeout is an error that occurs if receiving a message times out.

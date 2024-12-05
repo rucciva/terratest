@@ -2,7 +2,7 @@
 
 This is the code for the [Terratest website](https://terratest.gruntwork.io).
 
-Terratest website is built with Jekyll and published on Github Pages from `docs` folder on `main` branch.
+Terratest website is built with Jekyll and published on Github Pages from `docs` folder on `master` branch.
 
 # Quick Start
 
@@ -43,7 +43,7 @@ Clone or fork Terratest [repository](https://github.com/gruntwork-io/terratest).
 
 # Deployment
 
-GitHub Pages automatically rebuilds the website from the `/docs` folder whenever you commit and push changes to the `main`
+GitHub Pages automatically rebuilds the website from the `/docs` folder whenever you commit and push changes to the `master`
 branch.
 
 # Working with the documentation

@@ -9,10 +9,8 @@ packer {
 
 source "docker" "ubuntu-docker" {
   changes = ["ENTRYPOINT [\"\"]"]
-
-  commit   = true
-  image    = "gruntwork/ubuntu-test:16.04"
-  platform = "linux/amd64"
+  commit  = true
+  image   = "gruntwork/ubuntu-test:16.04"
 }
 
 build {
@@ -24,6 +22,6 @@ build {
 
   post-processor "docker-tag" {
     repository = "gruntwork/packer-hello-world-example"
-    tag = ["latest"]
+    tag        = ["latest"]
   }
 }

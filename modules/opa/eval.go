@@ -61,41 +61,12 @@ func Eval(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resu
 //	opa eval -i $JSONFile -d $RulePath $ResultQuery
 //
 // This will asynchronously run OPA on each file concurrently using goroutines.
-// This will fail the test if any one of the files failed.
-// For each file, the output will be returned on the outputs slice.
-func EvalWithOutput(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resultQuery string) (outputs []string) {
-	outputs, err := EvalWithOutputE(t, options, jsonFilePaths, resultQuery)
-	require.NoError(t, err)
-	return
-}
-
-// EvalE runs `opa eval` on the given JSON files using the configured policy file and result query. Translates to:
-//
-//	opa eval -i $JSONFile -d $RulePath $ResultQuery
-//
-// This will asynchronously run OPA on each file concurrently using goroutines.
-func EvalE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resultQuery string) (err error) {
-	_, err = evalE(t, options, jsonFilePaths, resultQuery)
-	return
-}
-
-// EvalWithOutputE runs `opa eval` on the given JSON files using the configured policy file and result query. Translates to:
-//
-//	opa eval -i $JSONFile -d $RulePath $ResultQuery
-//
-// This will asynchronously run OPA on each file concurrently using goroutines.
-// For each file, the output will be returned on the outputs slice.
-func EvalWithOutputE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resultQuery string) (outputs []string, err error) {
-	return evalE(t, options, jsonFilePaths, resultQuery)
-}
-
-func evalE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resultQuery string) (outputs []string, err error) {
+func EvalE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, resultQuery string) error {
 	downloadedPolicyPath, err := DownloadPolicyE(t, options.RulePath)
 	if err != nil {
-		return
+		return err
 	}
 
-	outputs = make([]string, len(jsonFilePaths))
 	wg := new(sync.WaitGroup)
 	wg.Add(len(jsonFilePaths))
 	errorsOccurred := new(multierror.Error)
@@ -103,10 +74,7 @@ func evalE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, res
 	for i, jsonFilePath := range jsonFilePaths {
 		errChan := make(chan error, 1)
 		errChans[i] = errChan
-
-		go func(i int, jsonFilePath string) {
-			outputs[i] = asyncEval(t, wg, errChan, options, downloadedPolicyPath, jsonFilePath, resultQuery)
-		}(i, jsonFilePath)
+		go asyncEval(t, wg, errChan, options, downloadedPolicyPath, jsonFilePath, resultQuery)
 	}
 	wg.Wait()
 	for _, errChan := range errChans {
@@ -115,7 +83,7 @@ func evalE(t testing.TestingT, options *EvalOptions, jsonFilePaths []string, res
 			errorsOccurred = multierror.Append(errorsOccurred, err)
 		}
 	}
-	return outputs, errorsOccurred.ErrorOrNil()
+	return errorsOccurred.ErrorOrNil()
 }
 
 // asyncEval is a function designed to be run in a goroutine to asynchronously call `opa eval` on a single input file.
@@ -127,7 +95,7 @@ func asyncEval(
 	downloadedPolicyPath string,
 	jsonFilePath string,
 	resultQuery string,
-) (output string) {
+) {
 	defer wg.Done()
 	cmd := shell.Command{
 		Command: "opa",
@@ -137,7 +105,7 @@ func asyncEval(
 		// opa eval is typically very quick.
 		Logger: logger.Discard,
 	}
-	output, err := runCommandWithFullLoggingE(t, options.Logger, cmd)
+	err := runCommandWithFullLoggingE(t, options.Logger, cmd)
 	ruleBasePath := filepath.Base(downloadedPolicyPath)
 	if err == nil {
 		options.Logger.Logf(t, "opa eval passed on file %s (policy %s; query %s)", jsonFilePath, ruleBasePath, resultQuery)
@@ -147,12 +115,10 @@ func asyncEval(
 			options.Logger.Logf(t, "DEBUG: rerunning opa eval to query for full data.")
 			cmd.Args = formatOPAEvalArgs(options, downloadedPolicyPath, jsonFilePath, "data")
 			// We deliberately ignore the error here as we want to only return the original error.
-			output, _ = runCommandWithFullLoggingE(t, options.Logger, cmd)
+			runCommandWithFullLoggingE(t, options.Logger, cmd)
 		}
 	}
 	errChan <- err
-
-	return
 }
 
 // formatOPAEvalArgs formats the arguments for the `opa eval` command.
@@ -180,8 +146,8 @@ func formatOPAEvalArgs(options *EvalOptions, rulePath, jsonFilePath, resultQuery
 // runCommandWithFullLogging will log the command output in its entirety with buffering. This avoids breaking up the
 // logs when commands are run concurrently. This is a private function used in the context of opa only because opa runs
 // very quickly, and the output of opa is hard to parse if it is broken up by interleaved logs.
-func runCommandWithFullLoggingE(t testing.TestingT, logger *logger.Logger, cmd shell.Command) (output string, err error) {
-	output, err = shell.RunCommandAndGetOutputE(t, cmd)
+func runCommandWithFullLoggingE(t testing.TestingT, logger *logger.Logger, cmd shell.Command) error {
+	output, err := shell.RunCommandAndGetOutputE(t, cmd)
 	logger.Logf(t, "Output of command `%s %s`:\n%s", cmd.Command, strings.Join(cmd.Args, " "), output)
-	return
+	return err
 }
